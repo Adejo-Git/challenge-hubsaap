@@ -1,0 +1,206 @@
+{
+  "componentKey": "SessionService",
+  "status": "complete",
+  "timestamp": "2026-03-04T00:00:00Z",
+  "files": [
+    {
+      "path": "libs/access-layer/src/lib/session/session.model.ts",
+      "purpose": "Tipos lite e enums para sessão normalizada",
+      "exports": [
+        "SessionStatus (enum)",
+        "UserLite (interface)",
+        "ClaimsLite (interface)",
+        "SessionStateLite (interface)",
+        "SessionSnapshot (interface)",
+        "INITIAL_SESSION_STATE_LITE (const)"
+      ]
+    },
+    {
+      "path": "libs/access-layer/src/lib/session/session.adapters.ts",
+      "purpose": "Mapear SessionState (auth-session) para SessionStateLite normalizado",
+      "exports": [
+        "mapSessionStateToLite(state: SessionState): SessionStateLite",
+        "mapUserToLite(user): UserLite",
+        "mapClaimsToLite(claims): ClaimsLite"
+      ]
+    },
+    {
+      "path": "libs/access-layer/src/lib/session/session.service.ts",
+      "purpose": "Facade principal: expõe API estável para Shell/Tools",
+      "exports": [
+        "SessionService (class, @Injectable)"
+      ],
+      "publicMethods": [
+        "session$(): Observable<SessionStateLite>",
+        "snapshot(): SessionSnapshot",
+        "isAuthenticated(): boolean",
+        "claimsLite(): ClaimsLite | null",
+        "restoreOrRefresh(): Promise<SessionSnapshot>",
+        "logout(): Promise<void>"
+      ]
+    },
+    {
+      "path": "libs/access-layer/src/lib/session/session.spec.ts",
+      "purpose": "Testes unitários (Jest) sem chamadas de rede",
+      "testSuites": [
+        "snapshot()",
+        "isAuthenticated()",
+        "claimsLite()",
+        "session$()",
+        "restoreOrRefresh()",
+        "logout()",
+        "claimsLite() normalization"
+      ]
+    },
+    {
+      "path": "libs/access-layer/src/lib/session/index.ts",
+      "purpose": "Barrel export para session module",
+      "exports": [
+        "session.model",
+        "session.service"
+      ]
+    },
+    {
+      "path": "libs/access-layer/src/lib/session/README.md",
+      "purpose": "Documentação técnica e exemplos de API"
+    },
+    {
+      "path": "libs/access-layer/src/index.ts",
+      "purpose": "Atualizado para exportar SessionService e SessionStateLite"
+    }
+  ],
+  "integrationNotes": [
+    {
+      "subject": "Encapsulamento de auth-session",
+      "detail": "SessionService é o único ponto de acesso para AuthSessionService no Hub. Shell/Tools **não** importam authSession diretamente; apenas via SessionService."
+    },
+    {
+      "subject": "Modelo lite normalizado",
+      "detail": "SessionStateLite contém apenas dados não-sensíveis (authenticated, status, user.id/name/email, claims.sub/roles/groups). Token, refresh_token, detalhes inernos nunca são expostos."
+    },
+    {
+      "subject": "Observable reativo",
+      "detail": "session$() mapeia o stream de auth-session.session$ através de mapSessionStateToLite(). UI reage a mudanças de autenticação sem vazamento de dados."
+    },
+    {
+      "subject": "Snapshot determinístico",
+      "detail": "snapshot() retorna estado sincronizado atual via authSession.snapshot() mapeado para lite. Múltiplas chamadas retornam estado consistente."
+    },
+    {
+      "subject": "Helpers de decisão",
+      "detail": "isAuthenticated() e claimsLite() são helpers seguros para Shell/Guards fazerem decisões sem acesso direto a token/claims completas."
+    },
+    {
+      "subject": "restoreOrRefresh() no bootstrap",
+      "detail": "Shell chama durante AuthGuard/AppComponent.ngOnInit(). Delega restore() ao AuthSessionService e emite telemetria com reason code (restore_ok, session_expired, refresh_failed, invalid_session)."
+    },
+    {
+      "subject": "logout() + telemetria segura",
+      "detail": "Delegação para authSession.logout() + evento trackEvent('session.service.logout', {reason}). Sem token/PII em telemetria."
+    },
+    {
+      "subject": "ErrorReason extraction",
+      "detail": "Função privada extractErrorReason(error) mapeia Error.message para reason codes (session_expired, refresh_failed, invalid_session, unknown_error) para telemetria segura."
+    },
+    {
+      "subject": "Adapters agnósticos de campos opcionais",
+      "detail": "extractString() e extractStringArray() garantem que apenas tipos seguros (string, string[]) são promovidos ao modelo lite. Valores nulos/undefined/inválidos são silenciosamente descartados."
+    },
+    {
+      "subject": "Dependências permitidas",
+      "detail": "✅ @angular/core, rxjs, @hub/auth-session, @hub/error-model, @hub/observability/data-access. ❌ HttpClient direto."
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "criterion": "Shell usa apenas SessionService",
+      "status": "met",
+      "evidence": "SessionService expõe toda a API necessária; AuthSessionService é injetado privadamente dentro de SessionService."
+    },
+    {
+      "criterion": "API estável (session$, snapshot, restoreOrRefresh, logout)",
+      "status": "met",
+      "evidence": "6 métodos públicos documentados no README, com assinaturas TypeScript tipadas."
+    },
+    {
+      "criterion": "Sem vazamento de token/PII em logs/telemetria",
+      "status": "met",
+      "evidence": "trackEvent() chamado com objetos {authenticated, reason} apenas. Sem token, sem claims completas, sem email/nome completo desnecessário."
+    },
+    {
+      "criterion": "Sem HttpClient direto",
+      "status": "met",
+      "evidence": "SessionService delega restore/refresh/logout para AuthSessionService. Nenhuma importação de HttpClient."
+    },
+    {
+      "criterion": "Testes mínimos cobrem restoreOrRefresh e snapshot",
+      "status": "met",
+      "evidence": "session.spec.ts contém 7 test suites com 18+ casos (snapshot, isAuthenticated, claimsLite, session$, restoreOrRefresh, logout, normalization)."
+    }
+  ],
+  "knownLimitations": [
+    {
+      "limitation": "SessionService não implementa refresh automático",
+      "reason": "Refresh é coordenado pelo auth-interceptor (pull-based) ou pela estratégia de auth-session (push-based). SessionService apenas expõe restoreOrRefresh() para Bootstrap.",
+      "mitigated": "AuthInterceptor coordena refresh transparentemente; Shell não precisa chamar refresh manualmente."
+    },
+    {
+      "limitation": "ClaimsLite não suporta claims customizadas complexas",
+      "reason": "Adapter filtra apenas string, string[], number, boolean. Objetos/arrays heterogêneos são descartados silenciosamente.",
+      "mitigated": "PermissionService/PolicyEngine podem re-expandir claims completas do AuthSessionService se regras RBAC/ABAC exigirem."
+    },
+    {
+      "limitation": "Sem cache persistente de snapshot entre recarregos",
+      "reason": "snapshot() é uma vista de AuthSessionService.state$ (em memória). Se o App recarrega, snapshot é vazio até restoreOrRefresh().",
+      "mitigated": "Shell deve chamar restoreOrRefresh() no ngOnInit() de AppComponent. BehaviorSubject no auth-session permite snapshot inicial durante bootstrap."
+    },
+    {
+      "limitation": "Sem correlação automática de eventos com sessionId",
+      "reason": "sessionId não é parte de SessionStateLite (modelo lite). ObservabilityService.trackEvent() usa correlationId genérico.",
+      "mitigated": "PermissionService/AccessDecisionService podem enriquecer context com sessionId se necessário para auditoria."
+    }
+  ],
+  "nextOptionalSteps": [
+    {
+      "step": "Integrar SessionService em AppComponent/AuthGuard",
+      "description": "Consumir SessionService.restoreOrRefresh() no ngOnInit() do Shell; implementar Loading/Error/NoAccess states durante bootstrap.",
+      "owner": "Shell Team"
+    },
+    {
+      "step": "Criar ContextService como comparable facade",
+      "description": "Se houver necessidade de facade para context (tenant/client/project), seguir o mesmo padrão: model lite, adapters, service, testes.",
+      "owner": "Access Layer Team"
+    },
+    {
+      "step": "Documentar exemplo de consumo em Tools",
+      "description": "Criar guide: 'Como um Tool acessa sessão via Tool Plugin Contract sem importar SessionService diretamente'.",
+      "owner": "Hub Academy Team"
+    },
+    {
+      "step": "Adicionar telemetria de latência em restoreOrRefresh()",
+      "description": "Medir tempo de restore/refresh e emitir via trackEvent() com propriedade 'durationMs' para observabilidade de performance.",
+      "owner": "Observability Team"
+    },
+    {
+      "step": "Integrar SessionService com FeatureFlagService",
+      "description": "Se feature flags dependem de claims (ex: roles), FeatureFlagService pode consumir claimsLite() para re-evaluar flags.",
+      "owner": "Feature Flags Team"
+    }
+  ],
+  "buildAndTest": {
+    "commands": [
+      "nx build access-layer",
+      "nx test access-layer --testFile=session.spec.ts",
+      "nx lint access-layer"
+    ],
+    "expectedOutcome": "Build success, all tests pass, no lint violations, boundaries enforced (no direct imports of auth-session in Shell)."
+  },
+  "architecturalConstraints": [
+    "Shell must depend on SessionService only; not on AuthSessionService.",
+    "Tools must depend on SessionService via Access Layer; not directly on auth-session.",
+    "SessionService is a pure facade; no business logic beyond normalization and error mapping.",
+    "SessionStateLite is immutable in contracts; adapters must not mutate source or output.",
+    "No telemetry events contain token, full claims, PII, or auth strategy details."
+  ],
+  "completionDate": "2026-03-04"
+}

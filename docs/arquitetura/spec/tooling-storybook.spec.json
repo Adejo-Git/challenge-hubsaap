@@ -1,0 +1,215 @@
+{
+  "ToolingStorybook": {
+    "kind": "frontend",
+    "key": "ToolingStorybook",
+    "title": "ToolingStorybook",
+    "summary": "Lib/asset de governança para UI: centraliza configuração do Storybook do monorepo (tokens, temas, decorators, msw mocks) e garante consistência na documentação/preview de ui-components e patterns.",
+    "function": "Padronizar como o Hub-Saap documenta e valida componentes visuais e patterns via Storybook. Fornece: configuração base (preview/main), decorators padrão (theme/context), loaders para tokens/ícones, mocks de data-access (MSW ou adapters), e guidelines de stories (naming, args, a11y checks). Evita configurações duplicadas por lib e reduz drift entre ui-components, ui-layout e patterns.",
+    "whenRuns": [
+      "Durante desenvolvimento de ui-components/ui-layout/patterns.",
+      "Em CI para validar stories/build do Storybook.",
+      "Ao revisar PRs de UI (evidência visual de mudanças).",
+      "Ao produzir documentação viva do Design System."
+    ],
+    "inputs": [
+      {
+        "name": "Storybook config",
+        "detail": "main.ts/preview.ts e addons padrão (docs/a11y/interactions)."
+      },
+      {
+        "name": "UI Theme/Tokens",
+        "detail": "ui-theme e ui-tokens para aplicar tema no preview."
+      },
+      {
+        "name": "Mock adapters (opcional)",
+        "detail": "MSW handlers para endpoints usados em patterns."
+      },
+      {
+        "name": "Asset pipeline",
+        "detail": "ui-icons-assets e fontes para preview."
+      },
+      {
+        "name": "Base preset",
+        "detail": "Preset/config reutilizável para todas as libs (zero copy/paste)."
+      },
+      {
+        "name": "Decorators",
+        "detail": "Decorators padrão: ThemeProvider, LayoutFrame, ContextMock (quando necessário)."
+      },
+      {
+        "name": "Guidelines",
+        "detail": "Padrão de naming, categorias, args e docs."
+      },
+      {
+        "name": "CI entry",
+        "detail": "Comando/target Nx para build/test de storybook no pipeline."
+      }
+    ],
+    "nonResponsibilities": [
+      "Não ser uma lib de UI (não contém componentes de produção).",
+      "Não substituir testes unitários/e2e do app.",
+      "Não criar pipeline complexo de visual regression obrigatório (pode ser futuro).",
+      "Não acoplar Storybook a endpoints reais (sempre mock/isolado)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-theme",
+        "why": "Aplicar tema no preview e validar tokens/variants."
+      },
+      {
+        "name": "ui-tokens",
+        "why": "Spacing/typography e consistência visual."
+      },
+      {
+        "name": "ui-icons-assets",
+        "why": "Assets e ícones disponíveis nos stories."
+      },
+      {
+        "name": "patterns-*",
+        "why": "Documentação e validação de patterns em isolamento."
+      },
+      {
+        "name": "http-base (opcional)",
+        "why": "Se mocks precisarem simular interceptors/base headers."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Se algum pattern precisar de stub de observabilidade."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/ui/tooling-storybook/src/lib/",
+      "files": [
+        {
+          "path": "storybook-preset.ts",
+          "purpose": "Preset reutilizável: addons, framework, aliases e defaults."
+        },
+        {
+          "path": "preview.ts",
+          "purpose": "Decorators globais (theme/layout) + parâmetros padrão (docs/a11y)."
+        },
+        {
+          "path": "main.ts",
+          "purpose": "Config base e integração com Nx targets (paths, stories globais)."
+        },
+        {
+          "path": "decorators/theme.decorator.ts",
+          "purpose": "Aplica ui-theme e alternância light/dark (se houver)."
+        },
+        {
+          "path": "decorators/layout.decorator.ts",
+          "purpose": "Frame/layout padrão para preview de componentes do Hub."
+        },
+        {
+          "path": "mocks/msw.handlers.ts",
+          "purpose": "Handlers MSW comuns (quando patterns dependem de data)."
+        },
+        {
+          "path": "mocks/context.mock.ts",
+          "purpose": "Mocks de contexto/sessão mínimos para stories."
+        },
+        {
+          "path": "storybook.util.ts",
+          "purpose": "Helpers: load assets, register icons, stable ids."
+        },
+        {
+          "path": "README.md",
+          "purpose": "Como usar o preset + convenções de stories e checklist de PR."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar preset central com addons mínimos (docs, a11y, interactions) e defaults.",
+      "Aplicar decorators globais para theme/tokens e um layout frame neutro.",
+      "Adicionar mocks reutilizáveis (context/session) para patterns que precisem.",
+      "Adicionar MSW handlers base (opcional) e guiar libs a não depender de endpoints reais.",
+      "Criar README com convenções: categorias, naming, args e do/dont.",
+      "Criar target Nx (storybook/build-storybook) padronizado para CI."
+    ],
+    "acceptanceCriteria": [
+      "Qualquer lib de UI/pattern consegue usar o preset sem duplicar config.",
+      "Theme/tokens/ícones carregam e renderizam consistentemente.",
+      "Stories rodam isolados sem dependência de backend.",
+      "CI consegue buildar storybook (target Nx) sem flakes.",
+      "README define convenções claras e checklist de PR."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Storybook for Design Systems",
+          "goal": "Padronizar stories e documentação viva do DS/patterns.",
+          "level": "Base",
+          "knowledge": [
+            "Docs e args",
+            "Decorators",
+            "Mínimo de mocks"
+          ]
+        },
+        {
+          "title": "CI Evidence for UI",
+          "goal": "Gerar evidências visuais e reduzir drift de UI no monorepo.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Nx targets",
+            "Build storybook",
+            "Regressão leve (conceito)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar tooling-storybook: preset central, main/preview, decorators de theme/layout, mocks mínimos (context/session) e MSW handlers opcionais, README com convenções e target Nx para CI.",
+      "generationSteps": [
+        "Criar preset + config base.",
+        "Criar decorators (theme/layout).",
+        "Criar mocks (context/session) e MSW opcional.",
+        "Criar README e convenções.",
+        "Validar com 1 lib ui-components e 1 pattern."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Tooling"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR define preset único (sem configs duplicadas por lib)",
+        "Gates passando (build/lint)",
+        "Theme/tokens/ícones carregam corretamente",
+        "README com convenções e checklist de PR"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Build do storybook executado (log/print)",
+        "Demonstração: 2 componentes e 1 pattern renderizando"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do tooling-storybook)",
+        "Guia: convenções de stories e como usar o preset"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:ui",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/tooling-storybook/jest.config.ts",
+        "profile": "basic",
+        "setupMode": "none"
+      }
+    }
+  }
+}

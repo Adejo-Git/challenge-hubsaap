@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc/http-base-check",
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

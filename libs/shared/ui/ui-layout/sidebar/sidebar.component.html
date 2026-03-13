@@ -1,0 +1,20 @@
+<!-- // src\app\lib\ui-layout\sidebar\sidebar.component.html -->
+
+<aside
+  #sidebarElement
+  class="ui-sidebar"
+  role="navigation"
+  tabindex="-1"
+  [attr.aria-hidden]="mobile && !mobileOpen"
+  [class.ui-sidebar--collapsed]="collapsed"
+  [class.ui-sidebar--mobile]="mobile"
+  [class.ui-sidebar--mobile-open]="mobile && mobileOpen"
+>
+  <!--
+    A Sidebar apenas expõe o container.
+    A renderização do menu pode ser feita:
+    - via ng-content
+    - ou via *ngIf externo usando o input nodes
+  -->
+  <ng-content></ng-content>
+</aside>

@@ -1,0 +1,210 @@
+{
+  "AccessDecision": {
+    "kind": "frontend",
+    "key": "AccessDecision",
+    "title": "AccessDecision",
+    "summary": "Asset central de decisão de acesso no frontend: consolida flags, RBAC e policies em uma API única (canEnter/canView/canExecute) consumida por Shell e Tools.",
+    "function": "Fornecer um ponto único e previsível para avaliação de acesso no frontend, combinando sessão/contexto, feature flags e regras de autorização (RBAC + policies). Produz decisões tipadas e rastreáveis para uso por RouteGuards, NavigationService e UX (habilitar/desabilitar ações).",
+    "whenRuns": [
+      "Quando RouteGuards avalia acesso a rotas (Shell e /tools/*).",
+      "Quando NavigationService filtra menu/deep links por acesso.",
+      "Quando componentes precisam habilitar/desabilitar ações (UX) sem reimplementar autorização.",
+      "Quando contexto muda (recalcular decisão e invalidar caches)."
+    ],
+    "inputs": [
+      {
+        "name": "Session snapshot",
+        "detail": "Usuário, roles/claims mínimas e estado autenticado (sem tokens expostos)."
+      },
+      {
+        "name": "Context snapshot",
+        "detail": "Tenant/cliente/projeto/ambiente ativos e atributos relevantes para policy."
+      },
+      {
+        "name": "Feature flags effective",
+        "detail": "Estado efetivo das flags por contexto/ambiente."
+      },
+      {
+        "name": "RBAC rules",
+        "detail": "Mapeamento role→permissions ou permission set por usuário."
+      },
+      {
+        "name": "Policy rules",
+        "detail": "Regras ABAC/policies declarativas (ex.: contexto exige projeto ativo)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Decision API",
+        "detail": "Métodos canEnter/canView/canExecute retornando allow/deny + reason."
+      },
+      {
+        "name": "Deny reasons",
+        "detail": "Razões padronizadas (unauthenticated/forbidden/flagOff/contextMissing/notFound)."
+      },
+      {
+        "name": "Decision snapshots",
+        "detail": "Resumo seguro para telemetria e debug (sem dados sensíveis)."
+      }
+    ],
+    "responsibilities": [
+      "Consolidar avaliação de acesso (flags + RBAC + policy) em uma API única.",
+      "Retornar decisão tipada e motivo técnico (para mapeamento 401/403/404).",
+      "Ser determinístico: mesma entrada → mesma decisão.",
+      "Evitar duplicação: Shell/Tools não implementam regras, apenas chamam AccessDecision.",
+      "Facilitar observabilidade: expor reason codes para logs/telemetria."
+    ],
+    "nonResponsibilities": [
+      "Não autenticar usuário (isso é auth-session + AuthGuard).",
+      "Não fazer chamadas HTTP (sem HttpClient).",
+      "Não ser a “fonte” de permissões/policies: RBAC e policy engine são fornecidos por adapters via ports (não por libs Nx obrigatórias neste workspace).",
+      "Não renderizar UI (apenas lógica/serviço).",
+      "Não esconder erros: decisões devem ser explícitas (deny com reason)."
+    ],
+    "dependencies": [
+      {
+        "name": "auth-session",
+        "why": "Fonte de sessão/claims mínimas para decisão (snapshot autenticado)."
+      },
+      {
+        "name": "feature-flags",
+        "why": "Fonte do estado efetivo das flags por contexto/ambiente (habilitação before authorization)."
+      },
+      {
+        "name": "access-layer-session",
+        "why": "Contrato/facade de sessão/contexto do Access Layer (reatividade e switching de contexto) consumido por Shell/Tools."
+      },
+      {
+        "name": "access-layer",
+        "why": "Access Layer cross-cutting: onde decisões e navegação são orquestradas; evita lógica espalhada e respeita boundaries."
+      },
+      {
+        "name": "error-model",
+        "why": "Modelo padronizado de errors/razões para mapear denyReason (unauthenticated/forbidden/flagOff/etc.)."
+      },
+      {
+        "name": "tool-plugin",
+        "why": "Define contratos mínimos para telemetria/eventos via DI e bridges (ex.: observability) sem acoplar em implementação concreta."
+      },
+      {
+        "name": "tool-data-access-sdk",
+        "why": "SDK/contratos compartilhados de integrações do Hub; pode hospedar contratos de observability/telemetria usados pelo Shell."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-decision/src/lib/",
+      "files": [
+        {
+          "path": "access-decision.service.ts",
+          "purpose": "API canEnter/canView/canExecute; compõe flags + RBAC + policy."
+        },
+        {
+          "path": "access-decision.model.ts",
+          "purpose": "Tipos: DecisionResult, DenyReason, DecisionContext, DecisionTarget."
+        },
+        {
+          "path": "access-decision.util.ts",
+          "purpose": "Helpers: normalização, cache leve por contexto, debug-safe snapshot."
+        },
+        {
+          "path": "access-decision.spec.ts",
+          "purpose": "Testes: allow/deny por flag, por RBAC, por policy; reasons corretos."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir DecisionTarget (route/tool/feature/action) e DecisionContext (session+context+flags).",
+      "Implementar AccessDecisionService compondo: flags → RBAC → policy (ordem explícita).",
+      "Retornar DecisionResult com allow boolean + denyReason code + detalhes mínimos.",
+      "Implementar cache leve por contexto (opcional) e invalidar em context change.",
+      "Integrar (opcional) com observability: logar allow/deny com reason code (sem payload sensível).",
+      "Criar testes mínimos cobrindo cenários principais e razões."
+    ],
+    "acceptanceCriteria": [
+      "API canEnter/canView/canExecute existe e é consumível por Shell/Tools.",
+      "Decisão é determinística e inclui denyReason padronizado.",
+      "Sem IO/HttpClient.",
+      "Integra corretamente flags + RBAC + policy.",
+      "Testes mínimos validam allow/deny e reasons."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Frontend Authorization Composition",
+          "goal": "Compor flags + RBAC + policies em uma decisão única e rastreável.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Diferença entre habilitação (flag) e autorização (RBAC/policy)",
+            "Modelagem de deny reasons",
+            "Determinismo e testabilidade"
+          ]
+        },
+        {
+          "title": "Decision as a Reusable Asset",
+          "goal": "Transformar a decisão em asset compartilhável sem acoplamento a UI.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Boundary rules (service-only)",
+            "Snapshots seguros para debug/telemetria",
+            "Evolução do contrato sem quebrar consumers"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar access-decision: service com canEnter/canView/canExecute combinando feature-flags + RBAC(port) + PolicyEngine(port), retornando DecisionResult com denyReason padronizado. Sem HttpClient. Entregar models/utils + testes mínimos.",
+      "generationSteps": [
+        "Criar models (DecisionTarget, DecisionContext, DecisionResult, DenyReason).",
+        "Implementar service com ordem explícita (flags→rbac(port)→policy(port)).",
+        "Adicionar util para snapshot seguro e cache leve opcional.",
+        "Criar testes mínimos (allow/deny por cada camada)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta deny reasons e ordem de composição (flags→rbac→policy)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem IO/HttpClient",
+        "Testes cobrindo reasons principais"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demonstração: RouteGuards usando AccessDecision e mapeando 403/404",
+        "Notas de decisão (quando usar 404 vs 403 em flagOff)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do access-decision)",
+        "Guia: como declarar permissions/flags/policies para uma tool",
+        "Playbook: troubleshooting (denyReason e impactos no menu/rotas)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-decision/jest.config.ts",
+        "profile": "ts",
+        "setupMode": "none"
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+<ui-content-frame>
+  <section class="smart-table" [class.smart-table--compact]="(queryState.density ?? layoutOptions.density) === 'compact'">
+    <header class="smart-table__toolbar">
+      <div class="smart-table__columns" *ngIf="columns.length">
+        <label class="smart-table__columns-label">Colunas:</label>
+        <label class="smart-table__column-toggle" *ngFor="let column of columns">
+          <input
+            type="checkbox"
+            [checked]="isColumnVisible(column.key)"
+            (change)="onToggleColumnVisibility(column.key, $any($event.target).checked)"
+          />
+          <span>{{ column.title }}</span>
+        </label>
+      </div>
+
+      <div class="smart-table__bulk" *ngIf="hasBulkActions && selectionState.selectedCount > 0">
+        <span>{{ selectionState.selectedCount }} selecionado(s)</span>
+        <button
+          type="button"
+          class="smart-table__btn"
+          *ngIf="canSelectAllMatching"
+          (click)="onSelectAllMatching()"
+        >
+          Selecionar todos os resultados
+        </button>
+        <button
+          type="button"
+          class="smart-table__btn"
+          *ngFor="let action of actions?.bulk"
+          [disabled]="action.disabled?.(selectedRows)"
+          (click)="onBulkAction(action.id)"
+        >
+          {{ action.label }}
+        </button>
+        <button type="button" class="smart-table__btn" (click)="onClearSelection()">Limpar</button>
+      </div>
+    </header>
+
+    <div class="smart-table__state" *ngIf="tableState === 'loading'">Carregando registros...</div>
+
+    <div class="smart-table__state smart-table__state--error" *ngIf="tableState === 'error'">
+      <p>{{ tableError?.message || 'Erro ao carregar tabela.' }}</p>
+      <button type="button" class="smart-table__btn smart-table__btn--danger" (click)="onRetry()">Tentar novamente</button>
+    </div>
+
+    <div class="smart-table__state" *ngIf="tableState === 'empty'">Nenhum registro encontrado.</div>
+
+    <div class="smart-table__wrapper" [style.max-height]="layoutOptions.height">
+      <table
+        *ngIf="tableState === 'ready'"
+        class="smart-table__table"
+        [class.smart-table__table--zebra]="layoutOptions.zebra"
+        [class.smart-table__table--sticky]="layoutOptions.stickyHeader"
+        [attr.role]="tableRole"
+        (keydown)="handleGridKeydown($event)"
+      >
+        <thead>
+          <tr>
+            <th *ngIf="canSelectRows" scope="col" class="smart-table__select-col">
+              <input
+                *ngIf="selectionState.mode === 'multi'"
+                type="checkbox"
+                [checked]="allPageRowsSelected"
+                (change)="onToggleAllPageRows($any($event.target).checked)"
+                aria-label="Selecionar todas as linhas da página"
+              />
+            </th>
+
+            <th
+              *ngFor="let column of visibleColumns; trackBy: trackByColumn"
+              scope="col"
+              [style.width]="column.width"
+              [attr.aria-sort]="getColumnSortAria(column.key)"
+            >
+              <button type="button" class="smart-table__btn smart-table__sort" [disabled]="!column.sortable" (click)="onSort(column)">
+                {{ column.title }}
+              </button>
+            </th>
+
+            <th *ngIf="actions?.row?.length" scope="col">Ações</th>
+          </tr>
+
+          <tr>
+            <th *ngIf="canSelectRows"></th>
+            <th *ngFor="let column of visibleColumns; trackBy: trackByColumn">
+              <input
+                *ngIf="column.filterable"
+                class="smart-table__filter-input"
+                type="text"
+                [value]="filterDraft[column.key] || ''"
+                (input)="onFilterInput(column.key, $any($event.target).value)"
+                [attr.aria-label]="'Filtrar por ' + column.title"
+              />
+            </th>
+            <th *ngIf="actions?.row?.length"></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let row of rows; let rowIndex = index; trackBy: trackByRow" [attr.aria-label]="getRowAriaLabel(rowIndex)">
+            <td *ngIf="canSelectRows">
+              <input
+                type="checkbox"
+                [checked]="isRowSelected(row)"
+                (change)="onToggleRowSelection(row, $any($event.target).checked)"
+                aria-label="Selecionar linha"
+              />
+            </td>
+
+            <td *ngFor="let column of visibleColumns; trackBy: trackByColumn">
+              <ng-container *ngIf="column.cellTemplate; else defaultCell">
+                <ng-container
+                  *ngTemplateOutlet="column.cellTemplate; context: { $implicit: row, value: getCellValue(row, column) }"
+                ></ng-container>
+              </ng-container>
+              <ng-template #defaultCell>
+                {{ getCellValue(row, column) }}
+              </ng-template>
+            </td>
+
+            <td *ngIf="actions?.row?.length">
+              <button
+                type="button"
+                class="smart-table__btn"
+                *ngFor="let action of actions?.row"
+                [disabled]="action.disabled?.(row)"
+                (click)="onRowAction(action.id, row)"
+              >
+                {{ action.label }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="smart-table__pagination" *ngIf="tableState === 'ready' || tableState === 'empty'">
+      <div class="smart-table__pagination-summary">
+        Página {{ queryState.page }} de {{ totalPages }} • {{ total }} itens
+      </div>
+      <div class="smart-table__pagination-controls">
+        <button type="button" class="smart-table__btn" (click)="onPageChange(queryState.page - 1)" [disabled]="queryState.page <= 1">Anterior</button>
+        <button type="button" class="smart-table__btn" (click)="onPageChange(queryState.page + 1)" [disabled]="queryState.page >= totalPages">Próxima</button>
+        <label>
+          Itens por página
+          <select [value]="queryState.pageSize" (change)="onPageSizeChange(+$any($event.target).value)">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+          </select>
+        </label>
+      </div>
+    </footer>
+  </section>
+</ui-content-frame>

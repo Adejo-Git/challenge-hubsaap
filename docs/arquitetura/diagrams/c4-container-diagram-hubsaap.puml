@@ -1,0 +1,43 @@
+@startuml
+!include <C4/C4_Container>
+
+title Hub SaaP — Frontend C4 Container Diagram
+
+LAYOUT_LEFT_RIGHT()
+
+Person(user, "Usuário da Plataforma", "Usuário que acessa a plataforma e utiliza Tools disponíveis.")
+
+System_Boundary(frontendBoundary, "Hub SaaP Frontend") {
+
+    Container(shell, "Shell App", "Angular", "Host estrutural persistente da plataforma. Realiza bootstrap, composição de layout, navegação e ativação lazy de Tools.")
+    Container(accessLayer, "Access Layer", "Angular Libraries", "Consome sessão, contexto, permissões avaliadas, capabilities e feature flags.")
+    Container(sharedAssets, "Shared UI / Shared Assets", "Angular Libraries", "Bibliotecas reutilizáveis de UI, layout, feedback, tokens, tema e padrões compartilhados.")
+    Container(contracts, "Contracts Layer", "TypeScript Libraries", "Contratos explícitos de Tool, metadata, integração e estruturas compartilhadas entre Shell e Tools.")
+    Container(sharedInfra, "Shared Infra / Data Access", "Angular Libraries", "Base HTTP, interceptors, telemetria, observabilidade e helpers técnicos reutilizáveis.")
+    Container(toolApps, "Tool Applications", "Angular Lazy Modules", "Aplicações de domínio hospedadas pelo Shell, carregadas sob demanda e integradas por contrato.")
+}
+
+System_Ext(identity, "Identity / Session Platform", "Serviços de identidade e sessão.")
+System_Ext(accessPlatform, "Authorization / Access Platform", "Serviços de autorização, capabilities e feature flags.")
+System_Ext(toolBackends, "Tool Backends", "APIs dos domínios das Tools.")
+System_Ext(observability, "Observability Platform", "Serviços de telemetria e observabilidade.")
+
+Rel(user, shell, "Acessa a plataforma", "HTTPS")
+Rel(shell, accessLayer, "Consome sessão, contexto e decisões avaliadas")
+Rel(shell, contracts, "Usa contratos de Tool e metadata")
+Rel(shell, sharedAssets, "Usa layout e componentes compartilhados")
+Rel(shell, sharedInfra, "Usa infraestrutura técnica comum")
+Rel(shell, toolApps, "Hospeda e ativa Tools via lazy route")
+
+Rel(toolApps, contracts, "Implementam contratos de integração")
+Rel(toolApps, sharedAssets, "Reutilizam componentes e padrões")
+Rel(toolApps, sharedInfra, "Usam base HTTP, telemetria e helpers")
+Rel(toolApps, accessLayer, "Consomem decisões avaliadas de acesso")
+Rel(toolApps, toolBackends, "Consumem APIs das Tools", "HTTPS")
+
+Rel(accessLayer, identity, "Consome sessão e identidade", "HTTPS")
+Rel(accessLayer, accessPlatform, "Consome permissões, capabilities e flags", "HTTPS")
+Rel(sharedInfra, observability, "Publica sinais de observabilidade", "HTTPS")
+
+SHOW_LEGEND()
+@enduml

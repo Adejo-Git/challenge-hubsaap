@@ -1,0 +1,181 @@
+{
+  "ToolFeatureFlags": {
+    "kind": "frontend",
+    "key": "ToolFeatureFlags",
+    "title": "ToolFeatureFlags",
+    "summary": "Contrato declarativo de flags da Tool: lista capacidades/recursos e requisitos mínimos para habilitar rotas e features sem acoplar o Hub aos detalhes internos.",
+    "function": "Declarar, de forma versionável, as feature flags relevantes da tool (capabilities) e os requisitos mínimos para habilitação por ambiente/contexto. O Hub pode usar essas flags (junto ao Access Layer) para filtrar deep links, bloquear rotas e controlar rollout sem depender da implementação interna da tool.",
+    "whenRuns": [
+      "Quando o Hub calcula visibilidade de tool/feature (NavigationService + AccessDecision).",
+      "Quando RouteGuards avalia se uma rota/feature está habilitada por contexto/ambiente.",
+      "Quando a tool decide renderizar ou esconder módulos internos por flag (gating interno leve)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolKey",
+        "detail": "Identificador da tool para namespacear flags e evitar colisões."
+      },
+      {
+        "name": "Feature Keys",
+        "detail": "Chaves estáveis das features (ex.: \"evidences\", \"reports\", \"admin\")."
+      },
+      {
+        "name": "Default State",
+        "detail": "Estado default por ambiente (prod/hml/dev) quando aplicável."
+      },
+      {
+        "name": "Context Rules (declarativas)",
+        "detail": "Regras mínimas por contexto (ex.: requireProject, requireTenantTier) quando necessário."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "FeatureFlag Map",
+        "detail": "Mapa/export de flags consumível pelo Hub e pela tool (declarativo)."
+      },
+      {
+        "name": "Capability descriptors",
+        "detail": "Descritores de capacidades para catálogo e auditoria (nome, descrição, estabilidade)."
+      }
+    ],
+    "responsibilities": [
+      "Publicar um conjunto mínimo e bem nomeado de flags da tool (capabilities).",
+      "Manter chaves estáveis e versionáveis (contrato).",
+      "Permitir controle de rollout (enable/disable) sem alterar rotas internas toda hora.",
+      "Oferecer metadados suficientes para o Hub filtrar deep links e bloquear features desabilitadas.",
+      "Evitar duplicidade: flags descrevem habilitação, não autorização (permissão é outro contrato)."
+    ],
+    "nonResponsibilities": [
+      "Não implementar o motor de flags (avaliação final é do Access Layer do Hub).",
+      "Não conter regras complexas de policy (RBAC/ABAC não é flag).",
+      "Não decidir fallback 401/403/404 (isso é Shell/RouteGuards).",
+      "Não fazer IO nem carregar configuração via HttpClient diretamente.",
+      "Não crescer para “configuração infinita”: manter foco em capabilities relevantes."
+    ],
+    "dependencies": [
+      {
+        "name": "ToolModule",
+        "why": "ToolFeatureFlags é exportado como parte do contrato do plugin."
+      },
+      {
+        "name": "ToolRoutes",
+        "why": "Flags podem estar associadas a rotas/segments internos (gating interno leve)."
+      },
+      {
+        "name": "ToolMenuMetadata",
+        "why": "Deep links podem declarar featureKey para permitir filtragem pelo Hub."
+      },
+      {
+        "name": "ToolPermissionMap",
+        "why": "Feature e permissão caminham juntas: habilitação ≠ autorização."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/tools/<toolKey>/src/app/tool-module/",
+      "files": [
+        {
+          "path": "tool.feature-flags.ts",
+          "purpose": "Declara e exporta ToolFeatureFlags (mapa de capabilities e metadados)."
+        },
+        {
+          "path": "tool.feature-flags.model.ts",
+          "purpose": "Tipagem do contrato (FeatureKey, FeatureDescriptor, FeatureRule)."
+        },
+        {
+          "path": "tool.feature-flags.spec.ts",
+          "purpose": "Testes: chaves únicas, nomes válidos, consistência com deep links (se declarados)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir um namespace por tool (toolKey) e uma lista pequena de featureKeys.",
+      "Criar `export const TOOL_FEATURE_FLAGS = {...}` com descritores: key, title, description, defaultState.",
+      "Opcional: incluir `rules` declarativas simples (ex.: requireProject) para orientar o Hub (sem engine).",
+      "Se deep links/rotas dependerem de flags, referenciar por featureKey (não por strings soltas).",
+      "Criar testes mínimos garantindo: chaves únicas, nomes não vazios, defaultState definido."
+    ],
+    "acceptanceCriteria": [
+      "ToolFeatureFlags exporta um mapa declarativo e versionável (contrato).",
+      "Feature keys são estáveis, únicas e namespaceadas pela tool.",
+      "Flags são usadas para habilitação (capabilities), não para autorização (permissões ficam no ToolPermissionMap).",
+      "Sem IO/HttpClient no contrato.",
+      "Testes mínimos validando integridade do mapa."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Feature Flags as Contract",
+          "goal": "Modelar flags como contrato declarativo e estável.",
+          "level": "Base",
+          "knowledge": [
+            "Naming e versionamento de chaves",
+            "Capacities vs permissions",
+            "Evitar flags “tudo ou nada” sem necessidade"
+          ]
+        },
+        {
+          "title": "Rollout & Gating Strategy",
+          "goal": "Usar flags para rollout sem acoplar Hub/Tool.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Estados default por ambiente",
+            "Gating interno leve vs decisão central no Hub",
+            "Testes de integridade do contrato"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolFeatureFlags (contrato) para uma tool do Hub: mapa de capabilities (featureKey, title, description, defaultState) e regras declarativas simples opcionais. Consistente com ToolMenuMetadata/ToolRoutes e sem IO. Entregar arquivos + testes mínimos.",
+      "generationSteps": [
+        "Gerar model/interfaces do contrato.",
+        "Criar constante exportada TOOL_FEATURE_FLAGS.",
+        "Adicionar validações simples (keys únicas, defaultState).",
+        "Criar testes mínimos de integridade."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Contract"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR lista featureKeys e propósito de cada uma",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Feature flags ≠ permissões (separação preservada)",
+        "Chaves estáveis e namespaceadas"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demonstração: deep link/rota desabilitada some/bloqueia quando flag off",
+        "Notas de decisão (quais flags entram no contrato e por quê)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ToolFeatureFlags)",
+        "Guia: naming/namespace de featureKeys",
+        "Exemplo: adicionar nova flag sem quebrar o Hub"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:tools"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/tools/jest.config.ts"
+      }
+    }
+  }
+}

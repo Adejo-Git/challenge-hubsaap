@@ -1,0 +1,124 @@
+<section
+  class="notification-center"
+  [class.closed]="!isPanelOpen()"
+  (keydown.escape)="onPanelEscape()"
+>
+  <header class="panel-header">
+    <div>
+      <h3>Notificações</h3>
+      <small data-testid="unread-count">{{ unreadCount() }} não lidas</small>
+    </div>
+
+    <button
+      type="button"
+      class="toggle-button"
+      (click)="togglePanel()"
+      data-testid="toggle-panel"
+      [attr.aria-expanded]="isPanelOpen()"
+      aria-controls="notification-center-panel"
+    >
+      {{ isPanelOpen() ? 'Fechar' : 'Abrir' }}
+    </button>
+  </header>
+
+  <div *ngIf="isPanelOpen()" class="panel-content" id="notification-center-panel" #panelContent>
+    <div class="filters" data-testid="filters">
+      <button
+        type="button"
+        [class.active]="filter() === 'all'"
+        (click)="setFilter('all')"
+        data-testid="filter-all"
+      >
+        Todas
+      </button>
+      <button
+        type="button"
+        [class.active]="filter() === 'unread'"
+        (click)="setFilter('unread')"
+        data-testid="filter-unread"
+      >
+        Não lidas
+      </button>
+
+      <label class="visually-hidden" for="severity-filter-select">Filtrar por severidade</label>
+      <select
+        id="severity-filter-select"
+        class="severity-filter"
+        (change)="setSeverityFilter($any($event.target).value)"
+        data-testid="filter-severity"
+      >
+        <option value="all">Todas severidades</option>
+        <option value="info">Info</option>
+        <option value="success">Success</option>
+        <option value="warning">Warning</option>
+        <option value="error">Error</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button type="button" (click)="markAllAsRead()" data-testid="mark-all-read">Marcar todas como lidas</button>
+      <button type="button" (click)="clearAll()" data-testid="clear-all">Limpar</button>
+    </div>
+
+    <div *ngIf="isLoading()" class="loading-state" data-testid="loading-state">
+      Carregando notificações...
+    </div>
+
+    <div *ngIf="!isLoading() && errorMessage()" class="error-state" data-testid="error-state">
+      <p>{{ errorMessage() }}</p>
+      <button type="button" (click)="retryLoad()" data-testid="retry-load">Tentar novamente</button>
+    </div>
+
+    <ul
+      *ngIf="!isLoading() && !errorMessage() && visibleNotifications().length > 0"
+      class="notification-list"
+      data-testid="notification-list"
+    >
+      <li
+        *ngFor="let notification of visibleNotifications()"
+        [class.read]="!!notification.readAt"
+        [class.info]="notification.severity === 'info'"
+        [class.success]="notification.severity === 'success'"
+        [class.warning]="notification.severity === 'warning'"
+        [class.error]="notification.severity === 'error'"
+      >
+        <button
+          type="button"
+          class="notification-item"
+          (click)="onNotificationClick(notification)"
+          [attr.aria-label]="getNotificationAriaLabel(notification)"
+          data-testid="notification-item"
+        >
+          <h4>{{ notification.title }}</h4>
+          <p>{{ notification.body }}</p>
+          <small>{{ notification.createdAt | date: 'short' }}</small>
+        </button>
+
+        <button
+          *ngIf="!notification.readAt"
+          type="button"
+          class="read-button"
+          (click)="markAsRead(notification); $event.stopPropagation()"
+          [attr.aria-label]="'Marcar notificação ' + notification.title + ' como lida'"
+          data-testid="mark-read"
+        >
+          Marcar como lida
+        </button>
+      </li>
+    </ul>
+
+    <div *ngIf="!isLoading() && !errorMessage() && hasMoreNotifications()" class="pagination-actions">
+      <button type="button" (click)="loadMoreNotifications()" data-testid="load-more-notifications">
+        Carregar mais notificações
+      </button>
+    </div>
+
+    <div
+      *ngIf="!isLoading() && !errorMessage() && visibleNotifications().length === 0"
+      class="empty-state"
+      data-testid="empty-state"
+    >
+      Nenhuma notificação encontrada para o filtro atual.
+    </div>
+  </div>
+</section>

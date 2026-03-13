@@ -1,0 +1,192 @@
+{
+  "UiTheme": {
+    "kind": "frontend",
+    "key": "UiTheme",
+    "title": "UiTheme",
+    "summary": "Theming do Hub: aplica temas (light/dark/brand variants) em runtime usando ui-tokens, controla modo, persistência e publicação reativa para componentes.",
+    "function": "Gerenciar o tema ativo do Hub (ex.: dark padrão, light opcional) aplicando CSS variables/classes derivadas de ui-tokens. Expõe API para alternar tema, persistir preferência e reagir a mudanças (incluindo suporte a prefers-color-scheme e reduced motion).",
+    "whenRuns": [
+      "No bootstrap do AppShell (aplicar tema inicial antes do render pesado).",
+      "Quando usuário altera preferência (light/dark).",
+      "Quando sistema muda (prefers-color-scheme), se habilitado.",
+      "Quando tokens/brand variant mudam por contexto/cliente (se aplicável)."
+    ],
+    "inputs": [
+      {
+        "name": "UiTokens",
+        "detail": "Fonte de valores semânticos e escalas."
+      },
+      {
+        "name": "StorageService",
+        "detail": "Persistência de preferência de tema (scoped e safe)."
+      },
+      {
+        "name": "Runtime Config",
+        "detail": "Tema padrão, temas habilitados, estratégia (class vs css vars)."
+      },
+      {
+        "name": "Browser preferences",
+        "detail": "prefers-color-scheme, prefers-reduced-motion."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Applied theme",
+        "detail": "CSS variables/classes aplicadas em :root/body (ex.: data-theme=\"dark\")."
+      },
+      {
+        "name": "Reactive theme state",
+        "detail": "API watchTheme()/snapshot() para componentes e layouts."
+      },
+      {
+        "name": "Theme utilities",
+        "detail": "Helpers para tokens por tema e fallback."
+      }
+    ],
+    "responsibilities": [
+      "Aplicar tema inicial de forma precoce (evitar flash de tema).",
+      "Gerenciar troca de tema (light/dark/variants) de forma determinística.",
+      "Persistir preferência com escopo (usuário/tenant quando necessário).",
+      "Expor estado reativo para consumo por ui-components/ui-layout.",
+      "Respeitar acessibilidade (reduced motion, contraste)."
+    ],
+    "nonResponsibilities": [
+      "Não definir valores dos tokens (isso é ui-tokens).",
+      "Não implementar componentes (isso é ui-components).",
+      "Não controlar navegação/layout do Hub.",
+      "Não fazer IO remoto (tema vem de tokens/config local).",
+      "Não acoplar a um framework de UI específico além do necessário."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-tokens",
+        "why": "Fonte única de tokens; tema deriva e aplica tokens."
+      },
+      {
+        "name": "storage-secure (recomendado)",
+        "why": "Persistência segura e namespaced da preferência; gap já registrado."
+      },
+      {
+        "name": "runtime-config (recomendado)",
+        "why": "Tema padrão e variantes habilitadas; gap já registrado."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-theme/src/lib/",
+      "files": [
+        {
+          "path": "ui-theme.service.ts",
+          "purpose": "Aplica tema (classes/css vars), expõe API setTheme/watchTheme/snapshot."
+        },
+        {
+          "path": "ui-theme.model.ts",
+          "purpose": "Tipos: ThemeKey, ThemeState, ThemeStrategy, ThemeVariant."
+        },
+        {
+          "path": "ui-theme.apply.ts",
+          "purpose": "Funções puras para aplicar/remover classes e css vars no DOM."
+        },
+        {
+          "path": "ui-theme.storage.ts",
+          "purpose": "Persistência de preferência (keys, scope, TTL opcional)."
+        },
+        {
+          "path": "ui-theme.spec.ts",
+          "purpose": "Testes: aplica tema, troca, persistência, prefers-color-scheme (básico)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir ThemeKey (dark/light) e estratégia de aplicação (data-theme/class + css vars).",
+      "Implementar UiThemeService: init() aplica tema inicial antes do render principal.",
+      "Aplicar tokens via CSS vars (recomendado) ou classes Tailwind (apenas gating).",
+      "Persistir preferência em storage seguro e respeitar config (temas habilitados).",
+      "Suportar reduced motion e system preference quando habilitado.",
+      "Criar testes mínimos para troca/persistência/aplicação."
+    ],
+    "acceptanceCriteria": [
+      "Tema inicial aplica antes do layout (sem flash perceptível).",
+      "Troca de tema funciona e persiste preferência.",
+      "Estado reativo notifica consumidores (ui-layout/ui-components).",
+      "Sem hardcode de cores: deriva de ui-tokens.",
+      "Testes mínimos cobrem init/toggle/persistência."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Runtime Theming with Tokens",
+          "goal": "Aplicar tema via CSS vars/classes e manter estado reativo.",
+          "level": "Base",
+          "knowledge": [
+            "CSS variables e data-theme",
+            "Persistência de preferência",
+            "Evitar flash de tema (init early)"
+          ]
+        },
+        {
+          "title": "Accessibility in Theming",
+          "goal": "Respeitar prefers-color-scheme e reduced motion com governança.",
+          "level": "Intermediário",
+          "knowledge": [
+            "prefers-color-scheme",
+            "prefers-reduced-motion",
+            "Contraste e estados visuais"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ui-theme: service para aplicar tema (dark/light) via data-theme + CSS vars derivadas de ui-tokens, persistir preferência em storage seguro, expor watchTheme/snapshot e testes mínimos. Evitar flash com init early.",
+      "generationSteps": [
+        "Criar models (ThemeKey/State/Strategy).",
+        "Criar apply.ts (DOM operations puras).",
+        "Criar service com init/toggle/persistência.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Design System"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta estratégia (CSS vars vs classes) e chaves de tema",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem hardcode de cores; usa ui-tokens",
+        "Testes cobrindo init/toggle/persistência"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: alternar dark/light sem flash e persistir"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ui-theme)",
+        "Guia: como criar novo theme variant (se aplicável)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/ui-theme/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

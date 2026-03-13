@@ -1,0 +1,196 @@
+{
+  "SessionService": {
+    "kind": "frontend",
+    "key": "SessionService",
+    "title": "SessionService",
+    "summary": "Facade do Access Layer para sessão: expõe API estável para o Shell/Tools consumirem autenticação/claims/status sem acoplar diretamente às shared-libs (auth-session/storage/runtime-config).",
+    "function": "Atuar como camada de acesso única para sessão no Hub. Encapsula a shared-lib auth-session e padroniza: leitura do estado (snapshot/stream), restore, logout, eventos de lifecycle e helpers de claims/roles mínimos. Serve como “fronteira” para o Shell (AuthGuard/AppShell) e para Tools via contrato, evitando que o app acesse diretamente detalhes de storage/strategy/token.",
+    "whenRuns": [
+      "No bootstrap do Hub (restore inicial solicitado pelo Shell/AuthGuard).",
+      "Quando AuthGuard valida autenticado/expirado.",
+      "Quando AuthInterceptor precisa de token/refresh (via auth-session).",
+      "Ao ocorrer login/logout/expiração e o estado reativo propaga para UI."
+    ],
+    "inputs": [
+      {
+        "name": "AuthSession (shared-lib)",
+        "detail": "Fonte única do estado de autenticação (session$, restore/refresh, token encapsulado)."
+      },
+      {
+        "name": "StorageSecure (shared-lib, indireto)",
+        "detail": "Persistência segura de sessão (via AuthSession)."
+      },
+      {
+        "name": "RuntimeConfig (shared-lib, indireto)",
+        "detail": "Estratégia de auth/OIDC e flags de refresh (via AuthSession)."
+      },
+      {
+        "name": "ObservabilityService (shared-lib)",
+        "detail": "Eventos mínimos de lifecycle (restore/logout/expired) sem dados sensíveis."
+      },
+      {
+        "name": "session$()",
+        "detail": "Stream do estado (authenticated/status/userLite/claimsLite/exp) para Shell/UI."
+      },
+      {
+        "name": "snapshot()",
+        "detail": "Snapshot atual do estado de sessão para decisões rápidas."
+      },
+      {
+        "name": "isAuthenticated()",
+        "detail": "Helper boolean determinístico."
+      },
+      {
+        "name": "restoreOrRefresh()",
+        "detail": "Aciona restore e, se aplicável, refresh (sem expor strategy interna)."
+      },
+      {
+        "name": "logout()",
+        "detail": "Limpa sessão e emite lifecycle."
+      },
+      {
+        "name": "claimsLite()",
+        "detail": "Claims mínimas normalizadas (roles/groups/perms compactas)."
+      }
+    ],
+    "responsibilities": [
+      "Ser o ponto único de consumo de sessão para Shell/Tools (via Access Layer).",
+      "Encapsular auth-session e esconder detalhes de storage/strategy.",
+      "Normalizar modelo de sessão (SessionStateLite) e expor API consistente.",
+      "Fornecer helpers seguros (isAuthenticated, claimsLite) sem expor tokens.",
+      "Integrar com ObservabilityService para eventos mínimos (sem dados sensíveis)."
+    ],
+    "nonResponsibilities": [
+      "Não anexar Authorization em requests (isso é auth-interceptor).",
+      "Não controlar navegação/redirect (isso é AuthGuard/Router).",
+      "Não implementar RBAC/ABAC/policies (isso é permission-rbac/policy-engine/access-decision).",
+      "Não fazer HttpClient direto.",
+      "Não expor token bruto amplamente; apenas via métodos encapsulados quando inevitável (idealmente não expor)."
+    ],
+    "dependencies": [
+      {
+        "name": "auth-session",
+        "why": "Core da sessão e lifecycle (restore/refresh/logout) encapsulado."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados: SessionExpired/RefreshFailed/InvalidSession."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Telemetria mínima de lifecycle e troubleshooting."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/session/",
+      "files": [
+        {
+          "path": "session.service.ts",
+          "purpose": "Facade: expõe session$ / snapshot / restoreOrRefresh / logout / helpers."
+        },
+        {
+          "path": "session.model.ts",
+          "purpose": "Tipos lite: SessionStateLite, ClaimsLite, UserLite, SessionStatus."
+        },
+        {
+          "path": "session.adapters.ts",
+          "purpose": "Adapter/mapper entre AuthSession e modelo lite do Access Layer."
+        },
+        {
+          "path": "session.spec.ts",
+          "purpose": "Testes: restoreOrRefresh, snapshot, isAuthenticated, lifecycle events."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir SessionStateLite e ClaimsLite (somente o necessário para UI/decisões).",
+      "Implementar session$() como proxy do auth-session com mapeamento para lite.",
+      "Implementar snapshot() e isAuthenticated() de forma determinística.",
+      "Implementar restoreOrRefresh() chamando AuthSession.restore/refresh (sem expor strategy).",
+      "Implementar logout() delegando para AuthSession.clear/logout + evento observável mínimo.",
+      "Criar testes: restore ok/fail, expiração, snapshot consistente."
+    ],
+    "acceptanceCriteria": [
+      "Shell usa apenas SessionService (não importa auth-session diretamente).",
+      "API exposta é estável (session$, snapshot, restoreOrRefresh, logout).",
+      "Sem vazamento de token/PII em logs/telemetria.",
+      "Sem HttpClient direto.",
+      "Testes mínimos cobrem restoreOrRefresh e snapshot."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Access Layer Facades",
+          "goal": "Criar facades estáveis para desacoplar apps das shared-libs internas.",
+          "level": "Base",
+          "knowledge": [
+            "Facade pattern",
+            "Modelos lite",
+            "Evitar acoplamento direto"
+          ]
+        },
+        {
+          "title": "Session Lifecycle (Consumer View)",
+          "goal": "Consumir sessão de forma segura no Shell sem expor detalhes.",
+          "level": "Intermediário",
+          "knowledge": [
+            "restore/refresh/logout",
+            "streams/snapshot",
+            "telemetria segura"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar SessionService (Access Layer): facade sobre auth-session, expor session$+snapshot+isAuthenticated+restoreOrRefresh+logout+claimsLite, com modelo lite e testes mínimos. Sem token/PII em logs.",
+      "generationSteps": [
+        "Criar model lite.",
+        "Criar facade e adapters.",
+        "Criar testes mínimos.",
+        "Documentar: Shell deve consumir via Access Layer."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Access Layer"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "Shell não importa auth-session diretamente",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Model lite não carrega dados sensíveis",
+        "Testes mínimos incluídos"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: AppShell/AuthGuard consumindo SessionService"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do SessionService)",
+        "Guia: consumo de sessão via Access Layer (não direto nas shared-libs)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

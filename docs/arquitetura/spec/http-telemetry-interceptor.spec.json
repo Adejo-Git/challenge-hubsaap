@@ -1,0 +1,212 @@
+{
+  "HttpTelemetryInterceptor": {
+    "kind": "frontend",
+    "key": "HttpTelemetryInterceptor",
+    "title": "HttpTelemetryInterceptor",
+    "summary": "Interceptor HTTP de observabilidade no frontend: injeta correlationId, gera breadcrumbs e eventos de telemetria (latência/status) e captura erros (4xx/5xx) via ObservabilityService, sem vazar dados sensíveis.",
+    "function": "Interceptor Shared Infra / Data responsável por automatizar rastreabilidade em chamadas HTTP no Hub-Saap. Em cada request, obtém o correlationId persistente do ObservabilityService e o propaga via header padrão. Registra breadcrumbs de início/fim, mede duração, emite trackEvent para métricas mínimas (method/status/duration/urlKey) e captura exceções (HttpErrorResponse/unknown) via captureException com contexto seguro. Suporta filtros (allowlist/denylist), sampling e redaction para garantir segurança e evitar ruído.",
+    "whenRuns": [
+      "Em toda requisição HTTP do frontend (HttpClient) antes de enviar o request.",
+      "Na recepção do response para medir duração e registrar status code.",
+      "Em erros HTTP (4xx/5xx) para capturar exception e registrar telemetria padronizada.",
+      "Quando a telemetria HTTP estiver habilitada por RuntimeConfig (sampling + filtros)."
+    ],
+    "inputs": [
+      {
+        "name": "ObservabilityService",
+        "detail": "Fonte do correlationId persistente e APIs: captureException/trackEvent/addBreadcrumb."
+      },
+      {
+        "name": "RuntimeConfig/FeatureFlags",
+        "detail": "Liga/desliga telemetria HTTP, sampling, allowlist/denylist de URLs, header name e nível de captura (4xx/5xx)."
+      },
+      {
+        "name": "HttpRequest/HttpResponse metadata",
+        "detail": "Method, URL (sanitizada), status code, duração, sem body."
+      },
+      {
+        "name": "Router snapshot (opcional)",
+        "detail": "routeKey/toolKey (se disponível no contexto) para correlacionar chamadas ao fluxo atual."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Header de correlação",
+        "detail": "Adiciona header de correlação (padrão: 'x-correlation-id') em cada request."
+      },
+      {
+        "name": "Breadcrumbs HTTP",
+        "detail": "addBreadcrumb('HTTP <METHOD> <urlKey>', 'http') no start e no end (com status/duração)."
+      },
+      {
+        "name": "Eventos HTTP",
+        "detail": "trackEvent('http.request'|'http.response', {method,urlKey,status,durationMs,correlationId,...})."
+      },
+      {
+        "name": "Captura de falhas",
+        "detail": "captureException(error, { code/status, urlKey, correlationId, method }) para erros relevantes."
+      }
+    ],
+    "responsibilities": [
+      "Propagar correlationId em todas as requisições HTTP via header padrão, mantendo rastreabilidade end-to-end.",
+      "Sanitizar URL e metadados (não incluir query sensível, não incluir headers sensíveis, nunca incluir body).",
+      "Gerar breadcrumbs consistentes para debugging (início/fim) com categoria http.",
+      "Emitir eventos mínimos de telemetria para métricas: status code e duração (durationMs).",
+      "Capturar erros HTTP relevantes via ObservabilityService.captureException com contexto seguro.",
+      "Respeitar filtros e sampling por ambiente (evitar ruído e custos).",
+      "Garantir compatibilidade Nx: ser Shared Infra / Data consumido por apps/libs sem depender de Tool ou Shell."
+    ],
+    "dependencies": [
+      {
+        "name": "Shared Infra / Data",
+        "why": "ObservabilityService (correlationId + provider) e helpers de sanitização/config."
+      },
+      {
+        "name": "RuntimeConfig/FeatureFlags",
+        "why": "Config de telemetria HTTP (enable/sampling/filtros/headerName)."
+      },
+      {
+        "name": "Angular HttpClient",
+        "why": "Infra de interceptors (HttpInterceptor) e tipos HttpRequest/HttpHandler/HttpEvent."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/http-telemetry/src/lib/http-telemetry-interceptor/",
+      "files": [
+        {
+          "path": "http-telemetry.interceptor.ts",
+          "purpose": "Intercepta request/response/error; injeta correlationId; mede duração; emite telemetria."
+        },
+        {
+          "path": "http-telemetry.config.ts",
+          "purpose": "Config: enable, sampling, allowlist/denylist, headerName, capture4xx/capture5xx."
+        },
+        {
+          "path": "http-telemetry.sanitize.ts",
+          "purpose": "Sanitização de URL (urlKey), remoção de query sensível, truncamento."
+        },
+        {
+          "path": "http-telemetry.model.ts",
+          "purpose": "Tipos: HttpTelemetryEvent, HttpTelemetryErrorContext, UrlKeyPolicy."
+        },
+        {
+          "path": "http-telemetry.interceptor.spec.ts",
+          "purpose": "Testes: injeta header, respeita filtros, mede duration, captura erro, sanitize."
+        },
+        {
+          "path": "index.ts",
+          "purpose": "Exports públicos do interceptor e tipos."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir header padrão para correlação (default: 'x-correlation-id') configurável via runtime-config.",
+      "No intercept(request): obter correlationId via observability.getCorrelationId(); clonar request adicionando header.",
+      "Registrar breadcrumb de início: addBreadcrumb(`HTTP ${method} ${urlKey}`, \"http\").",
+      "Marcar timestamp inicial; no response calcular durationMs e emitir trackEvent http.response com status/duration.",
+      "Em erro: capturar HttpErrorResponse e emitir captureException com contexto seguro (status, urlKey, method, correlationId).",
+      "Aplicar filtros: denylist (ex.: assets, healthcheck) e allowlist opcional para endpoints críticos.",
+      "Aplicar sampling por ambiente (ex.: 10% em prod) para eventos http.*; sempre capturar 5xx (sem sampling) se configurado.",
+      "Garantir sanitização: nunca registrar body; nunca registrar Authorization/cookies/tokens; truncar urlKey e propriedades."
+    ],
+    "acceptanceCriteria": [
+      "Toda request HTTP sai com header de correlação (x-correlation-id ou configurado) contendo o valor do ObservabilityService.",
+      "Breadcrumbs de início/fim são registrados para requests elegíveis (respeitando filtros/sampling).",
+      "trackEvent('http.response') registra status e durationMs sem vazar dados sensíveis.",
+      "captureException é chamado para erros configurados (ex.: sempre 5xx; 4xx opcional por config).",
+      "Não registra body nem headers sensíveis; sanitize é testado.",
+      "Pode ser desligado por RuntimeConfig e respeita allowlist/denylist/sampling.",
+      "Testes mínimos cobrindo injeção de header, duração e captura de erro."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "HTTP Observability (Interceptors)",
+          "goal": "Automatizar rastreabilidade HTTP com correlationId e telemetria mínima.",
+          "level": "Intermediário",
+          "knowledge": [
+            "HttpInterceptor pipeline",
+            "Medição de latência e status code",
+            "Filtros (allowlist/denylist) e sampling"
+          ]
+        },
+        {
+          "title": "Security in Telemetry",
+          "goal": "Evitar vazamento de dados sensíveis em observabilidade.",
+          "level": "Base",
+          "knowledge": [
+            "Redaction/sanitize (headers/body/query)",
+            "Allowlist de propriedades",
+            "Truncamento e limites de payload"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar HttpTelemetryInterceptor (Shared Infra/Data) que injeta correlationId em header, cria breadcrumbs http, mede durationMs, emite trackEvent('http.request'/'http.response') e captura erros via captureException com contexto seguro, respeitando filtros e sampling via runtime-config, com testes mínimos.",
+      "generationSteps": [
+        "Criar config (enable/sampling/allowlist/denylist/headerName/capture4xx/capture5xx).",
+        "Criar sanitize (urlKey, remover query sensível, truncar).",
+        "Implementar interceptor (request/response/error) com observability.getCorrelationId + trackEvent + addBreadcrumb + captureException.",
+        "Criar testes: header injection, duration measurement, error capture, filter/sampling, sanitize.",
+        "Gerar checklist de PR e evidências (exemplo de request com header + erro 500 capturado)."
+      ],
+      "tags": [
+        "SharedInfra",
+        "HTTP",
+        "CorrelationId",
+        "Telemetry",
+        "Security",
+        "Nx-safe"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "Header de correlação configurável e aplicado em requests elegíveis",
+        "Sem body e sem headers sensíveis na telemetria (sanitize validado)",
+        "Filtros e sampling configuráveis por ambiente",
+        "Erros 5xx capturados com correlationId e urlKey",
+        "Boundaries passando (Nx enforce-module-boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Print/registro do gate pass (lint/tests/boundaries)",
+        "Demo: request sai com x-correlation-id + breadcrumb criado + trackEvent('http.response')",
+        "Demo: erro 500 gera captureException com correlationId (sem payload sensível)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Catálogo: HttpTelemetryInterceptor (o que registra e o que nunca registra)",
+        "Playbook: filtros (allowlist/denylist) e sampling recomendados por ambiente",
+        "Guia: header de correlação e integração com backend (x-correlation-id)"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não executa roteamento global para páginas de erro (isso é responsabilidade do Shell/handlers dedicados).",
+      "Não registra body de request/response.",
+      "Não registra headers sensíveis (Authorization, cookies, tokens) nem querystrings sensíveis.",
+      "Não decide políticas de captura por domínio; apenas aplica config técnica (sampling/filtros)."
+    ],
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:infra"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/http-telemetry/data-access/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

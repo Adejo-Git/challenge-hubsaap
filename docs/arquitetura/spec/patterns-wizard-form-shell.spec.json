@@ -1,0 +1,258 @@
+{
+  "PatternsWizardFormShell": {
+    "kind": "frontend",
+    "key": "PatternsWizardFormShell",
+    "title": "PatternsWizardFormShell",
+    "summary": "Pattern reutilizável de Wizard/Form Shell: provê estrutura de passos, validação por etapa, navegação controlada, estados (dirty/loading/error) e integração “pluggable” com forms (Reactive Forms) sem lógica de domínio.",
+    "function": "Fornecer um “shell” de wizard de formulários (multi-step) que padroniza: layout do wizard, stepper, navegação (back/next/finish), validação por etapa, guard de saída quando há alterações (dirty), estados de carregamento/erro, e APIs para o consumidor injetar conteúdo (templates) e lógica específica (validators/submit handlers). Deve ser usado por Shell e Tools quando houver fluxo guiado de entrada de dados.",
+    "whenRuns": [
+      "Quando uma tela precisa de fluxo multi-etapas (criação/edição guiada).",
+      "Quando uma Tool precisa padronizar onboarding/configuração com passos.",
+      "Quando há necessidade de validar e bloquear avanço até requisitos mínimos da etapa.",
+      "Quando é preciso proteger saída com alterações não salvas (dirty guard no nível do wizard)."
+    ],
+    "inputs": [
+      {
+        "name": "steps: WizardStep[]",
+        "detail": "Definição dos passos (id, title, optional, enabled, summary) e metadados."
+      },
+      {
+        "name": "form: FormGroup | AbstractControl",
+        "detail": "Form root do fluxo (Reactive Forms), ou factory por step."
+      },
+      {
+        "name": "stepValidators",
+        "detail": "Funções/estratégia para validar step atual antes de avançar."
+      },
+      {
+        "name": "canExit",
+        "detail": "Handler para permitir/impedir saída quando dirty (opcional)."
+      },
+      {
+        "name": "initialStepId",
+        "detail": "Step inicial (para deep link/retomada), se habilitado."
+      },
+      {
+        "name": "layoutOptions",
+        "detail": "Opções: orientação, labels, posição do stepper, modo compacto, etc."
+      },
+      {
+        "name": "ui deps",
+        "detail": "Consome ui-components/ui-layout para stepper, buttons, alerts e slots."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "stepChange",
+        "detail": "Evento ao mudar de step (from → to) com motivo (next/back/jump)."
+      },
+      {
+        "name": "finish",
+        "detail": "Evento ao concluir wizard (payload: snapshot do form + contexto do wizard)."
+      },
+      {
+        "name": "cancel",
+        "detail": "Evento ao cancelar/abandonar (com reason) e estado dirty."
+      },
+      {
+        "name": "validationState",
+        "detail": "Estado exposto: step valid/invalid, dirty, touched, errors resumidos."
+      },
+      {
+        "name": "navigationState",
+        "detail": "Estado exposto: canNext/canBack/canFinish/isBusy/isBlocked."
+      }
+    ],
+    "responsibilities": [
+      "Padronizar a estrutura do wizard: stepper + conteúdo + footer de ações.",
+      "Controlar navegação (back/next/jump) respeitando enable/optional/blocked.",
+      "Executar validação por step e impedir avanço quando inválido.",
+      "Expor estados de UX: loading/busy, erros do step atual, progresso.",
+      "Implementar proteção de saída (dirty) via API simples (hook) e/ou guard utilitário.",
+      "Permitir composição por templates (conteúdo do step vem do consumidor).",
+      "Ser agnóstico de domínio (sem regras do Hub/Tool)."
+    ],
+    "nonResponsibilities": [
+      "Não executar chamadas HTTP (submit real fica no consumidor/data-access).",
+      "Não definir modelos de domínio nem mapear DTOs.",
+      "Não decidir permissões/visibilidade (isso é access-decision/guards).",
+      "Não substituir validações de negócio complexas (apenas orquestra validação configurada).",
+      "Não impor um design system além de consumir ui-* (sem CSS hardcoded fora do DS)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-components",
+        "why": "Stepper, buttons, alerts, inputs base e feedback de erro."
+      },
+      {
+        "name": "ui-layout",
+        "why": "Slots/frame do conteúdo e consistência do layout."
+      },
+      {
+        "name": "ui-tokens",
+        "why": "Spacing/typography/states sem hardcode."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Cores/variants conforme tema."
+      },
+      {
+        "name": "error-model",
+        "why": "Modelos padronizados para erro de validação/submit (quando exibidos)."
+      },
+      {
+        "name": "router-helpers/navigation-model (opcional)",
+        "why": "Se suportar deep-link por step/retomada via rota."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/ui/patterns-wizard-form-shell/src/lib/",
+      "files": [
+        {
+          "path": "wizard-form-shell.component.ts",
+          "purpose": "Componente principal: stepper + slots + navegação."
+        },
+        {
+          "path": "wizard-form-shell.component.html",
+          "purpose": "Template com stepper, content outlet e footer actions."
+        },
+        {
+          "path": "wizard-form-shell.component.scss",
+          "purpose": "Ajustes mínimos (consumindo tokens/classes DS)."
+        },
+        {
+          "path": "wizard-form-shell.model.ts",
+          "purpose": "Tipos: WizardStep, WizardState, WizardNavState, WizardEvents."
+        },
+        {
+          "path": "wizard-form-shell.validators.ts",
+          "purpose": "Helpers: validação por step, resumo de erros, touched/dirty."
+        },
+        {
+          "path": "wizard-form-shell.util.ts",
+          "purpose": "Helpers: compute canNext/canFinish, jump rules, optional steps."
+        },
+        {
+          "path": "wizard-dirty-guard.util.ts",
+          "purpose": "Utilitário opcional para integrar com CanDeactivate."
+        },
+        {
+          "path": "wizard-form-shell.spec.ts",
+          "purpose": "Testes: navegação, bloqueio por validação, dirty exit, eventos."
+        },
+        {
+          "path": "wizard-form-shell.stories.ts",
+          "purpose": "Storybook: exemplos (3 steps, optional, errors, loading)."
+        },
+        {
+          "path": "README.md",
+          "purpose": "Como usar: inputs/outputs, exemplos, anti-patterns."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir WizardStep e contrato de steps (id estável + title + optional + enabled).",
+      "Implementar WizardFormShellComponent com inputs/outputs e estado interno reativo.",
+      "Implementar regras: next/back/jump respeitando enabled/optional e validação.",
+      "Integrar com Reactive Forms: marcar touched no avanço e produzir resumo de erros por step.",
+      "Implementar “busy” state para desabilitar navegação durante submit/loads.",
+      "Implementar hook de dirty exit (canExit) e util opcional para CanDeactivate.",
+      "Criar Storybook com casos: happy path, step inválido, optional, busy, cancel.",
+      "Criar testes mínimos: navegação, bloqueio por validação, eventos, dirty guard."
+    ],
+    "acceptanceCriteria": [
+      "Step inválido bloqueia avanço e exibe feedback consistente.",
+      "Back/Next funcionam e respeitam steps disabled/optional.",
+      "Finish dispara evento com snapshot do form e estado do wizard.",
+      "Busy state desabilita navegação e previne double-submit.",
+      "Dirty exit protege saída (hook ou util CanDeactivate) sem loops.",
+      "Sem HttpClient e sem lógica de domínio.",
+      "Testes mínimos cobrem navegação + bloqueios + eventos + dirty exit."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 5,
+      "finalizationDays": 6
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Wizard UX Patterns (Angular)",
+          "goal": "Construir shell de wizard reutilizável com navegação e validação por step.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Reactive Forms e validação por etapa",
+            "State derivado (canNext/canFinish)",
+            "UX de erros (touched/dirty) e prevenção de double-submit"
+          ]
+        },
+        {
+          "title": "Composable UI (Slots + Patterns)",
+          "goal": "Criar pattern composable (conteúdo por template) sem acoplar domínio.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Content projection e TemplateRef",
+            "APIs de inputs/outputs estáveis",
+            "Storybook para patterns"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar PatternsWizardFormShell: componente Angular reutilizável de wizard multi-step com stepper + slots, validação por etapa (Reactive Forms), navegação back/next/jump, busy state, dirty exit (hook + util CanDeactivate opcional), eventos (stepChange/finish/cancel) e testes mínimos + storybook.",
+      "generationSteps": [
+        "Criar models (WizardStep, WizardState, WizardNavState).",
+        "Gerar componente + template com stepper e footer actions.",
+        "Implementar regras de navegação e validação por step.",
+        "Implementar resumo de erros e touched/dirty behavior.",
+        "Implementar dirty exit hook + util para CanDeactivate.",
+        "Gerar testes mínimos e stories (3 cenários)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Patterns",
+        "Forms",
+        "A11y"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta contrato de WizardStep e exemplos de uso",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient / sem domínio",
+        "Busy state e prevenção de double-submit validados",
+        "Dirty exit validado (sem loops)",
+        "Stories no Storybook com casos principais"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Storybook: wizard 3 passos (happy path) + caso inválido + busy",
+        "Notas de decisão (regras de jump e optional steps)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do patterns-wizard-form-shell)",
+        "README de uso e anti-patterns (o que NÃO fazer)",
+        "Checklist de integração (forms/dirty/submit)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:ui",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/patterns-wizard-form-shell/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

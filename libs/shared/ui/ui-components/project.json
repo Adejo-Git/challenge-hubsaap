@@ -1,0 +1,43 @@
+{
+  "name": "ui-components",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/shared/ui/ui-components",
+  "tags": ["type:ui", "scope:shared"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/shared/ui/ui-components --ext .ts,.tsx,.js"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/shared/ui/ui-components/jest.config.ts"
+      }
+    }
+    ,
+    "storybook": {
+      "executor": "@nx/storybook:storybook",
+      "options": {
+        "config": {
+          "configFolder": "libs/shared/ui/tooling-storybook/.storybook"
+        },
+        "configDir": "libs/shared/ui/tooling-storybook/.storybook",
+        "port": 4410
+      }
+    },
+    "build-storybook": {
+      "executor": "@nx/storybook:build",
+      "options": {
+        "config": {
+          "configFolder": "libs/shared/ui/tooling-storybook/.storybook"
+        },
+        "configDir": "libs/shared/ui/tooling-storybook/.storybook",
+        "outputPath": "dist/storybook/ui-components"
+      }
+    }
+  }
+}

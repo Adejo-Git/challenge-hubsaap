@@ -1,0 +1,185 @@
+{
+  "ToolEvents": {
+    "kind": "frontend",
+    "key": "ToolEvents",
+    "title": "ToolEvents",
+    "summary": "Canal padronizado de eventos Tool↔Hub: publica lifecycle, telemetria e eventos de integração sem acoplar a tool ao Shell.",
+    "function": "Fornecer um contrato e uma implementação base para emissão/consumo de eventos entre Tool e Hub. Padroniza eventos de lifecycle (loaded/ready/error/contextChanged), eventos de UX (open/close/click) e telemetria técnica, com payload mínimo e sem dados sensíveis, permitindo observabilidade e integração (ex.: NotificationCenter, logs, métricas).",
+    "whenRuns": [
+      "Quando ToolRootComponent inicializa a tool (emite loaded/ready).",
+      "Quando ocorre erro no container ou em fluxos críticos (emite error).",
+      "Quando a tool precisa publicar eventos importantes (ex.: “documentGenerated”, “evidenceAdded”).",
+      "Quando o Hub precisa escutar eventos para telemetria/integração (ex.: atualizar badge, notificar usuário)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolKey",
+        "detail": "Identificador da tool para namespace de eventos e roteamento."
+      },
+      {
+        "name": "Event payload",
+        "detail": "Payload padronizado (type, timestamp, correlationId, severity, data mínima)."
+      },
+      {
+        "name": "Context snapshot (opcional)",
+        "detail": "Contexto reduzido (ids, não objetos sensíveis) para correlação."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Destino para telemetria/métricas (consumido via implementação do Hub)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Event stream",
+        "detail": "Observable/stream de eventos por tool e globais."
+      },
+      {
+        "name": "Lifecycle events",
+        "detail": "loaded/ready/error/contextChanged emitidos de forma consistente."
+      },
+      {
+        "name": "Integration hooks",
+        "detail": "Possibilidade do Hub reagir (badges/notifications/logs) sem acoplamento."
+      }
+    ],
+    "responsibilities": [
+      "Definir contrato de eventos (tipos, payload mínimo, severidade, correlação).",
+      "Prover API simples para publish/subscribe (emit/on).",
+      "Garantir namespacing por toolKey para evitar colisões.",
+      "Evitar vazamento de dados sensíveis (payload deve ser “safe by design").",
+      "Facilitar observabilidade: integração com ObservabilityService por adapter/bridge."
+    ],
+    "nonResponsibilities": [
+      "Não ser um message broker distribuído (escopo é frontend, intra-app).",
+      "Não persistir eventos como histórico (isso é responsabilidade de observability/telemetria).",
+      "Não substituir NotificationService (notificação é UX; ToolEvents é canal técnico/integração).",
+      "Não transportar grandes payloads (evitar anexos/objetos grandes).",
+      "Não impor fluxo de negócio entre tools (somente eventos de integração)."
+    ],
+    "dependencies": [
+      {
+        "name": "ObservabilityService (Shared-Libs)",
+        "why": "Bridge para registrar eventos/telemetria com correlação."
+      },
+      {
+        "name": "NotificationService (Shared-Libs)",
+        "why": "Opcional: converter certos eventos em notificações UX (badge/toast/painel)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/tool/tool-plugin/src/lib/tool-events/",
+      "files": [
+        {
+          "path": "tool-events.service.ts",
+          "purpose": "API publish/subscribe; mantém stream por toolKey e stream global."
+        },
+        {
+          "path": "tool-events.model.ts",
+          "purpose": "Tipos: ToolEvent, ToolEventType, Severity, payload safe."
+        },
+        {
+          "path": "tool-events.bridge.ts",
+          "purpose": "Adapter opcional para Observability/Notification (sem acoplar diretamente)."
+        },
+        {
+          "path": "tool-events.spec.ts",
+          "purpose": "Testes: namespacing, publish/subscribe, payload safe, lifecycle helpers."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar `ToolEventsService` com Subject/Observable interno e métodos `emit(event)` e `on(type|predicate)`.",
+      "Definir tipos: ToolEventType (lifecycle + custom), payload mínimo (safe).",
+      "Implementar namespacing por toolKey e helpers: emitLoaded/emitReady/emitError.",
+      "Criar bridge opcional para ObservabilityService (logar eventos relevantes) e NotificationService (somente quando aplicável).",
+      "Adicionar validação leve de payload (ex.: bloquear campos proibidos como token/PII por convenção).",
+      "Criar testes mínimos: filtro por toolKey, eventos de lifecycle, correlação e segurança do payload."
+    ],
+    "acceptanceCriteria": [
+      "Tools conseguem emitir eventos (lifecycle + custom) sem depender do Shell.",
+      "Hub consegue assinar eventos (por toolKey e global) para integração/telemetria.",
+      "Payload é mínimo e não permite dados sensíveis por padrão.",
+      "Integração com observabilidade via bridge (quando habilitada).",
+      "Testes mínimos validando publish/subscribe e namespacing."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Eventing in Frontend (Intra-App)",
+          "goal": "Padronizar publish/subscribe com payload seguro e tipado.",
+          "level": "Base",
+          "knowledge": [
+            "RxJS Subjects/Observables e patterns",
+            "Tipagem de eventos e namespacing",
+            "Evitar vazamento de dados sensíveis em eventos"
+          ]
+        },
+        {
+          "title": "Telemetry & Integration Bridges",
+          "goal": "Conectar eventos a observabilidade e UX (quando apropriado) sem acoplamento.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Adapters/bridges e boundary rules",
+            "Correlação de eventos (correlationId)",
+            "Critérios para promover eventos a notificações"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolEvents (shared lib): service publish/subscribe tipado, events de lifecycle (loaded/ready/error/contextChanged), namespacing por toolKey, payload seguro, bridge opcional para Observability/Notification, e testes mínimos.",
+      "generationSteps": [
+        "Gerar model de eventos e enums.",
+        "Gerar service com streams por toolKey e global.",
+        "Adicionar helpers de lifecycle + filtro por tipo.",
+        "Adicionar bridge opcional para observabilidade/notificação.",
+        "Criar testes mínimos (namespacing + lifecycle + payload safe)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Observability"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta tipos de evento e payload mínimo",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Namespacing por toolKey implementado",
+        "Sem payload sensível (revisão de segurança)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: tool emite loaded/ready e Hub captura (log/telemetria)",
+        "Notas de decisão (quais eventos viram notificação)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ToolEvents)",
+        "Guia: como emitir eventos (lifecycle e custom) com payload seguro",
+        "Playbook: troubleshooting (eventos não chegam / duplicação / correlação)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:tool"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/tool-plugin/jest.config.ts"
+      }
+    }
+  }
+}

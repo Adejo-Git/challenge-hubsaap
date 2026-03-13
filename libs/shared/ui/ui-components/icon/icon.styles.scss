@@ -1,0 +1,44 @@
+// src\app\lib\ui-components\icon\icon.styles.scss
+
+.ui-icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+
+  color: currentColor;
+  font-size: var(--line-height-sm);
+}
+
+/* Sizes */
+.ui-icon--sm {
+  font-size: var(--font-size-md);
+}
+
+.ui-icon--md {
+  font-size: var(--line-height-sm);
+}
+
+.ui-icon--lg {
+  font-size: var(--line-height-md);
+}
+
+/* Variants */
+.ui-icon--outlined {
+  font-family: 'Material Symbols Outlined';
+}
+
+.ui-icon--rounded {
+  font-family: 'Material Symbols Rounded';
+}
+
+.ui-icon--sharp {
+  font-family: 'Material Symbols Sharp';
+}

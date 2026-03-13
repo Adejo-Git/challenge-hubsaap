@@ -1,0 +1,12 @@
+{
+  "tags": [
+    { "tag": "type:shell", "description": "Shell / Orchestrator code (layout, bootstrap, navigation)" },
+    { "tag": "type:tool", "description": "Tool / feature application code (domain-specific tools)" },
+    { "tag": "type:shared", "description": "Shared UI and infra components reusable across tools" },
+    { "tag": "type:access", "description": "Access Layer: session, context, permissions, policy, navigation decisions" },
+    { "tag": "type:domain", "description": "Domain logic and models (non-UI)" },
+    { "tag": "type:contracts", "description": "Contracts, facades and adapters used to decouple layers" },
+    { "tag": "scope:shell", "description": "Scope for Shell-owned libs" },
+    { "tag": "scope:shared", "description": "Scope for shared libraries (cross-cutting)" }
+  ]
+}

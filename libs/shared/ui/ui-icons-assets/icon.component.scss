@@ -1,0 +1,23 @@
+// src/app/lib/ui-icons-assets/icon.component.scss
+
+:host {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.hub-icon {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}

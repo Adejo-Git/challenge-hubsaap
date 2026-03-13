@@ -1,0 +1,197 @@
+{
+  "ToolContract": {
+    "kind": "frontend",
+    "key": "ToolContract",
+    "title": "ToolContract",
+    "summary": "Contrato reutilizável Tool↔Hub: define tipos e padrões do Tool Plugin (metadata, flags, permissions, routes) e inclui o ToolContextAdapter para desacoplar tools do modelo do Hub.",
+    "function": "Fornecer um contrato versionável e tipado para que tools sejam plugináveis no Hub sem acoplamento. Centraliza modelos (ToolMenuMetadata, ToolFeatureFlags, ToolPermissionMap, ToolRoutes types), helpers de validação e o ToolContextAdapter (tradução do Contexto/Sessão/Flags/Decisão do Hub para um modelo interno de tool).",
+    "whenRuns": [
+      "Em build-time: tipagem/contrato compila e impede drift entre Shell e Tools.",
+      "Em runtime: ToolContextAdapter é usado por ToolRootComponent para traduzir contexto do Hub.",
+      "Quando o Hub carrega ToolRegistry e valida/consome metadados do contrato."
+    ],
+    "inputs": [
+      {
+        "name": "Hub Context Snapshot",
+        "detail": "Sessão/contexto/flags/decisão do Hub em formato reduzido e seguro (ids + claims mínimas)."
+      },
+      {
+        "name": "Tool Contract Exports",
+        "detail": "Constantes exportadas por tool: metadata/flags/permissionMap/routes."
+      },
+      {
+        "name": "ToolKey",
+        "detail": "Identificador único e estável da tool para namespace (rotas, permissões, eventos)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Typed contracts",
+        "detail": "Interfaces e tipos para ToolMenuMetadata/ToolFeatureFlags/ToolPermissionMap/ToolRoutes."
+      },
+      {
+        "name": "Validation helpers",
+        "detail": "Validadores leves de contrato (keys únicas, deepLinks coerentes, etc.)."
+      },
+      {
+        "name": "ToolContextAdapter",
+        "detail": "Adapter que expõe para a tool um ToolContext unificado, independente do shape do Hub."
+      }
+    ],
+    "responsibilities": [
+      "Definir contratos tipados e estáveis (compatíveis com versionamento).",
+      "Evitar “strings soltas”: padronizar keys (toolKey, featureKey, permissionKey).",
+      "Prover ToolContextAdapter para desacoplamento tools do Hub.",
+      "Prover helpers opcionais para validar consistência (deepLinks vs rotas, keys duplicadas).",
+      "Ser leve e sem IO (nenhum HttpClient; somente types/helpers)."
+    ],
+    "nonResponsibilities": [
+      "Não implementar engine de flags/permissões (isso é Access Layer: feature-flags + access-decision).",
+      "Não registrar tools em runtime (isso é tool-registry no Hub).",
+      "Não fazer navegação/Router (isso é Shell/RouterToolRoutes).",
+      "Não conter UI (somente contrato e adapter, sem componentes visuais).",
+      "Não carregar configuração remota (sem runtime config aqui)."
+    ],
+    "dependencies": [
+      {
+        "name": "access-decision",
+        "why": "ToolContextAdapter pode consumir a “decisão final” do Hub em formato reduzido (read-only)."
+      },
+      {
+        "name": "feature-flags",
+        "why": "ToolContextAdapter precisa refletir flags efetivas no ToolContext (read-only)."
+      },
+      {
+        "name": "auth-session",
+        "why": "ToolContextAdapter lê snapshot mínimo de sessão (userId/claims essenciais)."
+      },
+      {
+        "name": "tool-registry",
+        "why": "Contrato deve ser compatível com o registry (toolKey, metadata shape, versioning)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/tool/tool-contract/src/lib/",
+      "files": [
+        {
+          "path": "models/tool-contract.model.ts",
+          "purpose": "Tipos: ToolKey, ToolMenuMetadata, ToolDeepLink, ToolFeatureFlags, ToolPermissionMap, ToolRouteData."
+        },
+        {
+          "path": "adapter/tool-context-adapter.ts",
+          "purpose": "ToolContextAdapter: traduz HubContextSnapshot → ToolContext (safe, tipado)."
+        },
+        {
+          "path": "adapter/tool-context.model.ts",
+          "purpose": "Tipos do ToolContext (toolKey, user, context, flags, decision summary)."
+        },
+        {
+          "path": "validation/tool-contract.validation.ts",
+          "purpose": "Helpers: validar keys únicas, deepLinks coerentes, etc."
+        },
+        {
+          "path": "index.ts",
+          "purpose": "Barrel exports do contrato + adapter."
+        },
+        {
+          "path": "tool-contract.spec.ts",
+          "purpose": "Testes: validações e comportamento do adapter com snapshots simulados."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar tipos do contrato (metadata/flags/permissionMap/routes) com keys namespaceadas por toolKey.",
+      "Definir `HubContextSnapshot` minimalista (sem PII/tokens) para o adapter consumir.",
+      "Implementar ToolContextAdapter: mapear sessão/contexto/flags/decision → ToolContext consumível por tools.",
+      "Adicionar validações leves (ex.: deepLink.path relativo, keys únicas).",
+      "Exportar tudo via index.ts e manter compatibilidade (campos opcionais, defaults).",
+      "Criar testes mínimos: adapter com snapshot completo/incompleto; validação de keys."
+    ],
+    "acceptanceCriteria": [
+      "Tools conseguem compilar publicando contrato tipado (sem strings soltas).",
+      "ToolContextAdapter desacopla tools do modelo do Hub (ToolContext é estável).",
+      "Sem IO: não depende de HttpClient e não acessa runtime config.",
+      "Validações ajudam a detectar inconsistência (keys/deepLinks) cedo.",
+      "Testes mínimos cobrem adapter + validações."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Contract-First Tool Plugins",
+          "goal": "Definir contratos tipados e versionáveis para tools plugináveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Design de contratos e backward compatibility",
+            "Keys namespaceadas (toolKey/featureKey/permissionKey)",
+            "Validações leves de consistência"
+          ]
+        },
+        {
+          "title": "Adapters & Decoupling",
+          "goal": "Desacoplar modelo do Hub do modelo interno das tools via adapter.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Snapshots seguros (sem dados sensíveis)",
+            "Mapeamento e defaults robustos",
+            "Evolução do ToolContext sem quebrar tools"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar a lib tool-contract: tipos do contrato (menu metadata, feature flags, permission map, route data), validações leves (keys/deepLinks), e ToolContextAdapter que traduz HubContextSnapshot → ToolContext seguro e tipado. Sem HttpClient. Entregar index.ts e testes mínimos.",
+      "generationSteps": [
+        "Criar models do contrato e keys namespaceadas.",
+        "Criar HubContextSnapshot minimalista + ToolContext.",
+        "Implementar ToolContextAdapter com defaults robustos.",
+        "Criar validações leves.",
+        "Gerar barrel exports e testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Contract",
+        "Decoupling"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta contrato público (models exportados) e versionamento",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Snapshot seguro (sem tokens/PII) revisado",
+        "Adapter com defaults e testes mínimos"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Exemplo: uma tool consumindo ToolContextAdapter sem depender de Hub types",
+        "Notas de decisão: campos obrigatórios vs opcionais no contrato (minimal surface)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do tool-contract)",
+        "Guia: como uma tool publica o contrato (exports) e usa ToolContextAdapter",
+        "Playbook: troubleshooting de drift de contrato (keys, deepLinks, permissions)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:contracts",
+        "scope:tool"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/tool-contract/jest.config.ts"
+      }
+    }
+  }
+}

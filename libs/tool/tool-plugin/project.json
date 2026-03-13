@@ -1,0 +1,23 @@
+{
+  "name": "tool-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "libs/tool/tool-plugin",
+  "sourceRoot": "libs/tool/tool-plugin/src",
+  "projectType": "library",
+  "tags": ["type:shared", "scope:tool"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/tool/tool-plugin/jest.config.js"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/tool/tool-plugin/src --ext .ts"
+      }
+    }
+  }
+}

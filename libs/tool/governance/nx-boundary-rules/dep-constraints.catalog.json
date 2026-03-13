@@ -1,0 +1,31 @@
+{
+  "depConstraints": [
+    {
+      "sourceTag": "type:shell",
+      "allowedTags": ["type:access", "type:shared"]
+    },
+    {
+      "sourceTag": "type:tool",
+      "allowedTags": ["type:shared", "type:contracts"],
+      "allowedScopes": ["scope:<toolKey>"]
+    },
+    {
+      "sourceTag": "type:access",
+      "allowedTags": ["type:domain", "type:contracts", "type:shared"]
+    },
+    {
+      "sourceTag": "type:domain",
+      "allowedTags": ["type:contracts", "type:shared"],
+      "deniedTags": ["type:ui", "type:shell"]
+    },
+    {
+      "sourceTag": "type:shared",
+      "allowedTags": ["type:shared", "type:contracts"],
+      "deniedTags": ["type:tool", "type:shell"]
+    },
+    {
+      "sourceTag": "type:contracts",
+      "allowedTags": ["type:domain", "type:shared", "type:access", "type:tool"]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+<!-- libs/shared/ui/ui-feedback/components/ui-error-state/ui-error-state.component.html -->
+
+<section
+  #errorContainer
+  class="ui-error"
+  role="alert"
+  aria-live="assertive"
+  [attr.aria-label]="message?.title"
+  tabindex="-1"
+>
+  <h2 class="ui-error__title">
+    {{ message.title }}
+  </h2>
+
+  <p *ngIf="message.message" class="ui-error__message">
+    {{ message.message }}
+  </p>
+
+  <small *ngIf="showCorrelation && message.correlationId" class="ui-error__correlation">
+    Código de referência: {{ message.correlationId }}
+  </small>
+
+  <div class="ui-error__actions" *ngIf="actions.length">
+    <button *ngFor="let action of actions" type="button" (click)="onActionClick(action)">
+      {{ action.label }}
+    </button>
+  </div>
+</section>

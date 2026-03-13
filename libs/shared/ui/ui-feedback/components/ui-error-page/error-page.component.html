@@ -1,0 +1,41 @@
+<section class="error-page" role="alert" [attr.aria-live]="viewModel.ariaLive" [attr.aria-label]="viewModel.title">
+  <div class="error-page__content">
+    <div class="error-page__icon" aria-hidden="true">
+      <hub-icon [name]="viewModel.icon" [decorative]="true"></hub-icon>
+    </div>
+
+    <h1 #pageTitle class="error-page__title" tabindex="-1">
+      {{ viewModel.title }}
+    </h1>
+
+    <p class="error-page__message">
+      {{ viewModel.message }}
+    </p>
+
+    <small *ngIf="viewModel.showCorrelationId" class="error-page__correlation">
+      ID de correlação: {{ details?.correlationId }}
+    </small>
+
+    <div class="error-page__actions">
+      <button
+        type="button"
+        class="error-page__button error-page__button--primary"
+        [attr.aria-label]="viewModel.primaryCta.label"
+        (click)="onPrimaryAction()"
+      >
+        {{ viewModel.primaryCta.label }}
+      </button>
+
+      <button
+        *ngIf="viewModel.secondaryCta"
+        type="button"
+        class="error-page__button error-page__button--secondary"
+        [attr.aria-label]="viewModel.secondaryCta?.label"
+        (click)="onSecondaryAction()"
+      >
+        {{ viewModel.secondaryCta?.label }}
+      </button>
+    </div>
+  </div>
+</section>
+

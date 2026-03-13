@@ -1,0 +1,203 @@
+{
+  "ToolContextAdapter": {
+    "kind": "frontend",
+    "key": "ToolContextAdapter",
+    "title": "ToolContextAdapter",
+    "summary": "Adapter contratual que entrega contexto/sessão/flags/decisão para Tools sem que Tools importem Access Layer diretamente.",
+    "function": "Facade/Adapter de plataforma (shared/contract ou shared/access) que traduz o “contexto do Hub” (sessão + contexto ativo + flags + decisões) para um modelo mínimo e estável consumível por Tools. Evita que Tools dependam de SessionService/ContextService/PermissionService diretamente e reduz risco de violations Nx (tool → shared/contract, não tool → shell/access).",
+    "whenRuns": [
+      "Ao inicializar uma Tool (ToolRootComponent) para obter um snapshot inicial de contexto/sessão.",
+      "Ao ocorrer troca de contexto (tenant/cliente/projeto) para notificar Tools de forma reativa.",
+      "Ao atualizar flags/config runtime para refletir capacidades da Tool.",
+      "Ao recalcular decisões/policies que impactem features/menus internos da Tool."
+    ],
+    "inputs": [
+      {
+        "name": "SessionService",
+        "detail": "Fonte de estado de sessão (claims/roles/expiração) via Access Layer (consumido apenas pelo Adapter)."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Contexto ativo e mudanças reativas via Access Layer (consumido apenas pelo Adapter)."
+      },
+      {
+        "name": "FeatureFlagService",
+        "detail": "Flags e runtime switches relevantes (consumido apenas pelo Adapter)."
+      },
+      {
+        "name": "AccessDecisionService",
+        "detail": "Decisões finais (permitido/negado) para capacidades expostas à Tool."
+      },
+      {
+        "name": "ToolContracts (shared)",
+        "detail": "Tipos estáveis exportados: ToolContext, ToolSession, ToolCapabilities."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "toolContext$",
+        "detail": "Stream reativo do ToolContext (snapshot + mudanças) consumido pela Tool."
+      },
+      {
+        "name": "capabilities$",
+        "detail": "Stream reativo do que a Tool pode fazer (features/ações habilitadas)."
+      },
+      {
+        "name": "contextSnapshot()",
+        "detail": "Método síncrono/Promise para bootstrap (ex.: resolver antes de montar módulos internos)."
+      },
+      {
+        "name": "events: onContextChanged",
+        "detail": "Callback/event para integração com Tool internal state (opcional, contratual)."
+      }
+    ],
+    "responsibilities": [
+      "Expor para Tools apenas o “mínimo necessário” de sessão/contexto (evitar vazar detalhes internos do Hub).",
+      "Traduzir Access Layer em contratos estáveis (ToolContext/Capabilities).",
+      "Garantir que Tools não importem Access Layer diretamente (reduz violations Nx).",
+      "Fornecer API reativa e previsível (snapshot + updates).",
+      "Garantir que o modelo entregue à Tool seja imutável (DeepFreeze) para evitar side-effects da Tool no estado do Hub).",
+      "Suportar multi-tool: mesma API para qualquer Tool; comportamento consistente.",
+      "Padronizar error handling e observabilidade no boundary Tool↔Hub (sem UI)."
+    ],
+    "dependencies": [
+      {
+        "name": "Access Layer",
+        "why": "Consome Session/Context/Flags/Decision dentro do Adapter (um único ponto permitido)."
+      },
+      {
+        "name": "Tool Contracts",
+        "why": "Exporta tipos estáveis para Tools consumirem sem acoplamento."
+      },
+      {
+        "name": "Shared-Libs",
+        "why": "ErrorModel, ObservabilityService, runtime-config helpers."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/tool/tool-contract/src/lib/tool-context-adapter/",
+      "files": [
+        {
+          "path": "tool-context-adapter.ts",
+          "purpose": "Facade: agrega fontes (session/context/flags/decision) e expõe streams."
+        },
+        {
+          "path": "tool-context.model.ts",
+          "purpose": "Tipos contratuais (ToolContext, ToolSession, ToolCapabilities, ToolEnv)."
+        },
+        {
+          "path": "tool-context.mapper.ts",
+          "purpose": "Mapeia modelos internos (Access Layer) → contratos de Tool."
+        },
+        {
+          "path": "tool-context.adapter.spec.ts",
+          "purpose": "Testes: snapshot inicial, atualização por context change, capabilities."
+        },
+        {
+          "path": "index.ts",
+          "purpose": "Barrel exports (API pública) consumida por Tools."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir contratos estáveis: ToolContext (tenant/projeto/ambiente), ToolSession (userId/claims essenciais), ToolCapabilities (features/ações).",
+      "Implementar toolContext$ a partir de ContextService + SessionService, aplicando mapper e redaction (se necessário).",
+      "Implementar capabilities$ a partir de AccessDecisionService + FeatureFlagService.",
+      "Garantir que o Adapter não exporte referências a classes internas do Access Layer (somente types contratuais).",
+      "Padronizar erros no boundary (ErrorModel) e enviar eventos mínimos ao ObservabilityService.",
+      "Criar testes cobrindo: bootstrap snapshot, troca de contexto e mudança de capabilities."
+    ],
+    "acceptanceCriteria": [
+      "ToolRootComponent consegue obter ToolContext via Adapter sem importar Access Layer diretamente.",
+      "Mudanças de contexto propagam para Tools de forma reativa e testável.",
+      "Capabilities refletem decisões/flags (sem lógica na ToolRoot).",
+      "API pública exporta apenas contratos estáveis (sem vazamento de tipos internos).",
+      "Boundaries passam: Tool depende de ToolContracts/Shared; Access Layer fica encapsulado no Adapter."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Adapters & Facades (Nx-safe)",
+          "goal": "Criar facades para desacoplar camadas e reduzir violations Nx.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Facade pattern e contratos estáveis",
+            "Redução de superfície (minimal contracts)",
+            "Testes de streams e snapshots"
+          ]
+        },
+        {
+          "title": "Tool Integration Patterns",
+          "goal": "Integrar Tools ao Hub sem depender do Shell/Access diretamente.",
+          "level": "Intermediário",
+          "knowledge": [
+            "ToolRoot + ToolContextAdapter",
+            "Decisão/flags como capabilities",
+            "Separação Tool UI vs platform services"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolContextAdapter (shared/tool-contract) que consome Access Layer internamente, expõe ToolContext/Capabilities como contratos estáveis, e inclui testes para bootstrap e troca de contexto.",
+      "generationSteps": [
+        "Gerar modelos contratuais (ToolContext/ToolSession/ToolCapabilities).",
+        "Gerar adapter agregando session/context/flags/decision em streams.",
+        "Gerar mappers + redaction.",
+        "Gerar testes mínimos (snapshot + updates).",
+        "Gerar checklist de PR e evidências."
+      ],
+      "tags": [
+        "Facade",
+        "Contract-first",
+        "Nx-safe",
+        "No access imports in tools"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "API contratural estável (types exportados + streams) sem vazamento de classes internas",
+        "Testes cobrindo context change + capabilities",
+        "Sem dependência Tool → Shell",
+        "Boundaries passando (Nx enforce-module-boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Print/registro do gate pass",
+        "Exemplo de Tool consumindo toolContext$ sem importar Access Layer",
+        "Notas de decisão: campos incluídos/excluídos do contrato (minimal surface)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Catálogo: “Como uma Tool acessa contexto/sessão/capabilities”",
+        "Playbook: contrato ToolContext + versionamento",
+        "Exemplo de integração no ToolRootComponent"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não implementar UI de Tool ou Shell.",
+      "Não conter lógica de domínio da Tool.",
+      "Não expor serviços internos do Access Layer para Tools (sem re-export de classes).",
+      "Não decidir policy: apenas traduz a decisão final (AccessDecision) em capabilities."
+    ],
+    "nx": {
+      "tags": [
+        "type:contracts",
+        "scope:tool"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/tool-contract/jest.config.ts"
+      }
+    }
+  }
+}

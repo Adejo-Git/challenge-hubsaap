@@ -1,0 +1,11 @@
+<!-- libs/shared/ui/ui-feedback/components/ui-banner/ui-banner.component.html -->
+
+<div class="ui-banner" [attr.data-variant]="variant" role="status" aria-live="polite">
+  <strong class="ui-banner__title">
+    {{ message.title }}
+  </strong>
+
+  <p *ngIf="message.message" class="ui-banner__message">
+    {{ message.message }}
+  </p>
+</div>

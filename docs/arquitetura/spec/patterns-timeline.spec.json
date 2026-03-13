@@ -1,0 +1,256 @@
+{
+  "PatternsTimeline": {
+    "kind": "frontend",
+    "key": "PatternsTimeline",
+    "title": "PatternsTimeline",
+    "summary": "Pattern reutilizável de timeline/activity log: exibe eventos ordenados (com agrupamento e filtros), suporta estados (loading/empty/error) e formatação padronizada para trilhas de auditoria, decisões e histórico de mudanças.",
+    "function": "Fornecer um componente/pattern de timeline para renderizar uma trilha temporal de eventos (audit trail, histórico de decisões, atividades recentes). Padroniza: ordenação por data, agrupamento (por dia/autor/tipo), filtros simples, renderização de metadados (ator, ação, entidade, contexto), e estados (loading/empty/error). O pattern não busca dados nem faz HTTP: recebe items prontos (ou um provider externo).",
+    "whenRuns": [
+      "Quando é necessário exibir histórico/audit trail de uma entidade.",
+      "Quando ApprovalWidget exibe histórico de decisões.",
+      "Quando telas do Hub mostram atividade recente (eventos do sistema).",
+      "Quando é preciso um padrão consistente para logs/timeline em Tools."
+    ],
+    "inputs": [
+      {
+        "name": "items: TimelineItem[]",
+        "detail": "Eventos com timestamp, title, description, actor, type, tags, meta."
+      },
+      {
+        "name": "groupBy",
+        "detail": "none | day | actor | type (opcional) + estratégia custom."
+      },
+      {
+        "name": "sortDirection",
+        "detail": "desc (padrão) | asc."
+      },
+      {
+        "name": "filters",
+        "detail": "Config de filtros (type/tags/actor) e estado atual selecionado."
+      },
+      {
+        "name": "renderers",
+        "detail": "Templates opcionais para item header/body/footer (customização sem fork)."
+      },
+      {
+        "name": "state",
+        "detail": "loading | ready | empty | error (para padronizar UX)."
+      },
+      {
+        "name": "error",
+        "detail": "StandardError opcional quando state=error."
+      },
+      {
+        "name": "uiOptions",
+        "detail": "compact, showAvatars, showTags, maxItems, stickyGroupHeaders."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "filterChange",
+        "detail": "Evento ao alterar filtros (type/tag/actor) para o consumer reagir."
+      },
+      {
+        "name": "itemClick",
+        "detail": "Evento ao clicar em item (abrir detalhe) com itemRef."
+      },
+      {
+        "name": "loadMore",
+        "detail": "Evento para paginação incremental (infinite scroll), se habilitado."
+      }
+    ],
+    "responsibilities": [
+      "Renderizar timeline consistente e legível (ordenada e agrupada).",
+      "Oferecer agrupamento e filtros simples (sem virar um analytics tool).",
+      "Padronizar visual de estados: loading/empty/error.",
+      "Garantir formatação consistente de data/hora e metadados.",
+      "Permitir customização por templates (header/body/footer) sem duplicação.",
+      "Ser agnóstico de domínio (apenas TimelineItem genérico)."
+    ],
+    "nonResponsibilities": [
+      "Não buscar dados nem executar HTTP (consumer/data-access faz).",
+      "Não decidir políticas de auditoria (o que entra na timeline é externo).",
+      "Não armazenar estado complexo/persistente de filtros (opcional via consumer).",
+      "Não renderizar dados sensíveis por padrão (sanitização deve ser aplicada antes).",
+      "Não virar uma “tabela de logs” completa (isso é PatternsSmartTable)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-components",
+        "why": "Cards, badges, chips/tags, buttons, skeleton/empty-state."
+      },
+      {
+        "name": "ui-layout",
+        "why": "Frame e consistência visual/scroll containment."
+      },
+      {
+        "name": "ui-tokens",
+        "why": "Spacing/typography e estilos sem hardcode."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Cores/variants conforme tema."
+      },
+      {
+        "name": "error-model",
+        "why": "Renderização consistente de erro (StandardError) quando state=error."
+      },
+      {
+        "name": "audit-ui-helpers (opcional)",
+        "why": "Fonte típica de TimelineItem a partir de AuditEvent (mapper externo)."
+      },
+      {
+        "name": "i18n-core (recomendado)",
+        "why": "Formatação de data/textos; gap já registrado."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/ui/patterns-timeline/src/lib/",
+      "files": [
+        {
+          "path": "timeline.component.ts",
+          "purpose": "Componente principal: render + grouping/filter orchestration."
+        },
+        {
+          "path": "timeline.component.html",
+          "purpose": "Template: groups, items, header/body/footer via templates."
+        },
+        {
+          "path": "timeline.component.scss",
+          "purpose": "Ajustes mínimos (compact mode, group headers) via tokens."
+        },
+        {
+          "path": "timeline.model.ts",
+          "purpose": "Tipos: TimelineItem, TimelineGroup, FilterConfig, RendererTemplates."
+        },
+        {
+          "path": "timeline.grouping.ts",
+          "purpose": "Funções puras para agrupar/ordenar items."
+        },
+        {
+          "path": "timeline.format.ts",
+          "purpose": "Formatação de timestamp/labels (com i18n hook opcional)."
+        },
+        {
+          "path": "timeline.filters.ts",
+          "purpose": "Aplicação de filtros (type/tag/actor) e estado selecionado."
+        },
+        {
+          "path": "timeline.util.ts",
+          "purpose": "Helpers: truncate, sanitize display, stable keys/trackBy."
+        },
+        {
+          "path": "timeline.spec.ts",
+          "purpose": "Testes: grouping, filtering, states e eventos."
+        },
+        {
+          "path": "timeline.stories.ts",
+          "purpose": "Storybook: grouped by day, filters, error/empty/loading."
+        },
+        {
+          "path": "README.md",
+          "purpose": "Como usar: items, grouping, filtros e templates."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir TimelineItem genérico (id, timestamp, title, description, actor, type, tags, meta).",
+      "Implementar funções puras de sorting e grouping (day/actor/type).",
+      "Implementar filtros simples e emitir filterChange quando alterados.",
+      "Implementar template com content projection: itemHeader/itemBody/itemFooter.",
+      "Implementar estados loading/empty/error com UI consistente (skeleton/empty/error card).",
+      "Implementar trackBy por id para performance.",
+      "Adicionar opção de “load more” (infinite) por evento (sem buscar internamente).",
+      "Criar stories para principais cenários e testes mínimos."
+    ],
+    "acceptanceCriteria": [
+      "Items renderizam ordenados (padrão desc) com agrupamento configurável.",
+      "Filtros aplicam corretamente e emitem filterChange.",
+      "Estados loading/empty/error são consistentes e funcionam com StandardError.",
+      "Customização por templates funciona sem fork.",
+      "Sem HTTP e sem lógica de domínio.",
+      "Testes mínimos cobrem grouping/filter/states e eventos."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Timeline & Activity Feeds",
+          "goal": "Criar pattern de timeline reutilizável com grouping e filtros simples.",
+          "level": "Base",
+          "knowledge": [
+            "Modelagem de eventos (TimelineItem)",
+            "Grouping e sorting",
+            "States (loading/empty/error)"
+          ]
+        },
+        {
+          "title": "Composable Rendering (Templates)",
+          "goal": "Permitir customização de itens via templates sem duplicação.",
+          "level": "Intermediário",
+          "knowledge": [
+            "TemplateRef e content projection",
+            "TrackBy e performance",
+            "Formatação e i18n hooks"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar PatternsTimeline: componente Angular para timeline/activity log com items genéricos, sorting e grouping (day/actor/type), filtros simples com filterChange, estados loading/empty/error, templates para item header/body/footer, suporte opcional a loadMore por evento, sem HTTP. Incluir tests + storybook.",
+      "generationSteps": [
+        "Criar models (TimelineItem, groups, filters).",
+        "Criar funções puras de grouping/sorting/filtering.",
+        "Criar componente + template com templates custom.",
+        "Implementar states e eventos (filterChange/itemClick/loadMore).",
+        "Criar stories e testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Patterns",
+        "Timeline"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta contrato de TimelineItem e opções de grouping/filter",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HTTP e sem domínio",
+        "Stories cobrindo grouped + filters + error/empty/loading"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Storybook: timeline agrupada por dia + filtros + estados",
+        "Notas de decisão: limites do pattern vs smart-table"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do patterns-timeline)",
+        "README com exemplos de templates e grouping",
+        "Guia: como mapear AuditEvent → TimelineItem (se usar audit-ui-helpers)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:ui",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/patterns-timeline/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

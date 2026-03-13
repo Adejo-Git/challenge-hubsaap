@@ -1,0 +1,15 @@
+/* libs/shared/ui/ui-feedback/components/ui-empty-state/ui-empty-state.component.scss */
+
+.ui-empty {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--color-text-secondary);
+}
+
+.ui-empty__title {
+  margin-bottom: var(--spacing-sm);
+}
+
+.ui-empty__actions {
+  margin-top: var(--spacing-md);
+}

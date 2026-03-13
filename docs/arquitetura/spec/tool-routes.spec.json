@@ -1,0 +1,188 @@
+{
+  "ToolRoutes": {
+    "kind": "frontend",
+    "key": "ToolRoutes",
+    "title": "ToolRoutes",
+    "summary": "Rotas internas padronizadas da Tool: definem o mapa de navegação sob /tools/<toolKey> e garantem lazy/guardrails internos sem acoplar o Hub.",
+    "function": "Definir as rotas internas (children routes) de cada Tool, sob o container ToolRootComponent. Padroniza paths, páginas default, redirects e fallbacks internos, além de permitir lazy loading interno (por feature) quando necessário. Deve ser exportado pelo contrato do ToolModule e usado pelo Shell apenas indiretamente via lazy entrypoint.",
+    "whenRuns": [
+      "Após o ToolModule ser carregado via lazy pelo Shell (ativação de /tools/<toolKey>).",
+      "Durante navegação interna dentro da tool (children routes).",
+      "Quando a tool aplica fallbacks internos (redirect/default/404 interno)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolRootComponent",
+        "detail": "Container que hospeda o router-outlet interno da tool."
+      },
+      {
+        "name": "Route Definitions",
+        "detail": "Conjunto de rotas internas (path, component/loadComponent, data) por módulo/feature."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "detail": "Flags internas para habilitar/ocultar rotas/feature modules (guard interno opcional)."
+      },
+      {
+        "name": "ToolPermissionMap",
+        "detail": "Mapa interno de permissões por rota/capacidade (normalmente aplicado pelo Hub; interno só quando necessário)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Children routes",
+        "detail": "Array de rotas exportado e consumido pelo ToolModule."
+      },
+      {
+        "name": "Fallback interno",
+        "detail": "Redirect para rota default e rota “not-found” interna (se aplicável)."
+      },
+      {
+        "name": "Convenção de route.data",
+        "detail": "Metadados internos (title, featureKey, navGroup) usados pela própria tool."
+      }
+    ],
+    "responsibilities": [
+      "Definir o mapa de navegação interno da tool de forma determinística e versionável.",
+      "Garantir que todas as rotas internas estejam sob o ToolRootComponent (children).",
+      "Fornecer rota default (path \"\") e redirects consistentes.",
+      "Manter fallbacks internos previsíveis (404 interno, quando aplicável).",
+      "Evitar duplicar decisão de acesso do Hub: usar guards internos apenas para UX/feature gating específico."
+    ],
+    "nonResponsibilities": [
+      "Não proteger entrada na tool em /tools/<toolKey> (isso é RouteGuards do Hub).",
+      "Não implementar RBAC/ABAC/policies (isso é AccessDecision no Hub).",
+      "Não acoplar o Router do Shell às rotas internas (Shell só conhece /tools/<toolKey>).",
+      "Não buscar dados diretamente (sem IO/HttpClient em routes).",
+      "Não “montar menu do Hub” (menu do Hub vem de ToolMenuMetadata)."
+    ],
+    "dependencies": [
+      {
+        "name": "ToolModule",
+        "why": "ToolRoutes é exportado e agregado no entrypoint (contrato do plugin)."
+      },
+      {
+        "name": "ToolRootComponent",
+        "why": "Container obrigatório para hospedar children routes."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "why": "Gating interno opcional (feature-level) sem depender do Shell."
+      },
+      {
+        "name": "ToolPermissionMap",
+        "why": "Documenta requisitos por rota/capacidade; Hub aplica na entrada; tool usa para UX (ex.: esconder botões)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/tools/<toolKey>/src/app/tool-module/",
+      "files": [
+        {
+          "path": "tool.routes.ts",
+          "purpose": "Declara e exporta as rotas internas (children) sob ToolRootComponent."
+        },
+        {
+          "path": "tool.routes.spec.ts",
+          "purpose": "Testes: existe rota default, rotas sob ToolRoot, fallback interno coerente."
+        },
+        {
+          "path": "tool-route-data.model.ts",
+          "purpose": "Tipagem de route.data interna (title, featureKey, navGroup, breadcrumbs)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir `export const TOOL_ROUTES: Routes = [...]` com `path: \"\"` apontando para ToolRootComponent e `children` com as páginas.",
+      "Garantir rota default (ex.: redirectTo \"home\" ou primeira página) e `pathMatch: \"full\"` onde aplicável.",
+      "Adicionar `route.data` interno (title/featureKey) apenas para uso da tool (não para o Hub).",
+      "Se houver gating interno por feature, aplicar guard interno leve (preferir resolver por flags do ToolFeatureFlags).",
+      "Adicionar fallback interno opcional: rota \"**\" para uma página NotFound interna (sem conflitar com 404 do Hub).",
+      "Criar testes mínimos validando: children sob ToolRoot, existência de rota default, presença de fallback coerente."
+    ],
+    "acceptanceCriteria": [
+      "Todas as rotas internas estão sob ToolRootComponent (children).",
+      "Existe rota default funcional (sem tela em branco).",
+      "Roteamento interno funciona com lazy interno quando necessário.",
+      "Não depende de detalhes do Router do Shell (apenas /tools/<toolKey>).",
+      "Sem IO/HttpClient em rotas.",
+      "Testes mínimos validando integridade do mapa de rotas."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Angular Child Routes (Tools)",
+          "goal": "Modelar children routes robustas sob um container raiz.",
+          "level": "Base",
+          "knowledge": [
+            "Children routes e redirects",
+            "Fallback interno (**)",
+            "Uso correto de route.data para UI interna"
+          ]
+        },
+        {
+          "title": "Feature Gating sem acoplamento",
+          "goal": "Habilitar/desabilitar features internas sem duplicar autorização do Hub.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Feature flags e guards internos leves",
+            "Evitar duplicidade com RouteGuards do Hub",
+            "Lazy interno por feature quando necessário"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolRoutes para uma tool do Hub: children routes sob ToolRootComponent, rota default + redirects, route.data interno (title/featureKey), fallback interno opcional (**), sem IO/HttpClient. Entregar tool.routes.ts + testes mínimos.",
+      "generationSteps": [
+        "Gerar arquivo tool.routes.ts com rota raiz e children.",
+        "Adicionar redirects/default.",
+        "Adicionar route.data interno tipado (model).",
+        "Adicionar fallback interno opcional.",
+        "Criar testes mínimos de integridade."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Routing"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta paths internos e rota default",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Children routes sob ToolRootComponent",
+        "Sem duplicar autorização do Hub"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro: navegar entre 2-3 rotas internas e validar redirect default",
+        "Notas de decisão (se houver fallback interno **)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do Tool Routes)",
+        "Guia: convenção de rotas internas das tools",
+        "Exemplo de route.data interno tipado"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:tools"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/tools/jest.config.ts"
+      }
+    }
+  }
+}

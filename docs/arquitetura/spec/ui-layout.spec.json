@@ -1,0 +1,202 @@
+{
+  "UiLayout": {
+    "kind": "frontend",
+    "key": "UiLayout",
+    "title": "UiLayout",
+    "summary": "Componentes estruturais de layout do Hub: Topbar/Sidebar/RightPanel/ContentShell, slots e helpers para composição responsiva e consistente.",
+    "function": "Fornecer os blocos estruturais do Hub (Topbar, Sidebar, RightPanel, ContentFrame) como componentes reutilizáveis. Define os “slots” do layout e padrões responsivos (mobile/collapsed sidebar), sem acoplar a domínio ou navegação específica.",
+    "whenRuns": [
+      "No AppShellComponent para compor os 4 slots (Topbar/Sidebar/Content/RightPanel).",
+      "Quando páginas do Shell e Tools precisam de frames/paddings/layout grid consistente.",
+      "Quando Sidebar precisa mudar estado (collapsed, mobile overlay)."
+    ],
+    "inputs": [
+      {
+        "name": "UiTokens",
+        "detail": "Spacing/radius/z-index/shadows para estruturar layout."
+      },
+      {
+        "name": "UiTheme",
+        "detail": "Cores semânticas via CSS vars."
+      },
+      {
+        "name": "UiComponents",
+        "detail": "Primitives (buttons/tabs) usados em Topbar/Sidebar."
+      },
+      {
+        "name": "Navigation model",
+        "detail": "Modelo de menu (nodes) fornecido pelo Hub (NavigationService), mas UI-layout não calcula isso."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Layout components",
+        "detail": "TopbarComponent, SidebarComponent, RightPanelComponent, LayoutShell/Frame."
+      },
+      {
+        "name": "Slot composition",
+        "detail": "Inputs/slots para injetar conteúdo (ng-content/templating)."
+      },
+      {
+        "name": "Responsive behavior",
+        "detail": "Sidebar collapse, mobile drawer, sticky topbar, scroll handling."
+      }
+    ],
+    "responsibilities": [
+      "Fornecer estrutura visual e responsiva do Hub (slots).",
+      "Manter consistência de espaçamento, bordas, backgrounds e comportamento responsivo.",
+      "Expor API para compor conteúdo (slots) sem impor domínio.",
+      "Gerenciar estados visuais do layout (collapsed sidebar, right panel open).",
+      "Ser reutilizável pelas tools quando precisarem de frames padrão."
+    ],
+    "nonResponsibilities": [
+      "Não montar menu/navegação (isso é NavigationService + tool-registry + access-decision).",
+      "Não decidir visibilidade por permissão/flag.",
+      "Não orquestrar bootstrap (isso é AppShellComponent).",
+      "Não buscar dados (sem HttpClient).",
+      "Não conter regras de negócio do Hub."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-tokens",
+        "why": "Consistência visual e estrutural."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Cores/tema aplicados via CSS vars."
+      },
+      {
+        "name": "ui-components",
+        "why": "Primitives para botões/inputs e padrões internos."
+      },
+      {
+        "name": "router-helpers/navigation-model (recomendado)",
+        "why": "Modelo tipado de menu/breadcrumb para evitar acoplamento; gap já registrado."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-layout/src/lib/",
+      "files": [
+        {
+          "path": "layout-shell/layout-shell.component.ts",
+          "purpose": "Componente base de slots (Topbar/Sidebar/Content/RightPanel)."
+        },
+        {
+          "path": "topbar/topbar.component.ts",
+          "purpose": "Topbar com slots (left/center/right) e bindings simples."
+        },
+        {
+          "path": "sidebar/sidebar.component.ts",
+          "purpose": "Sidebar/drawer responsivo e renderização de menu (recebe nodes prontos)."
+        },
+        {
+          "path": "right-panel/right-panel.component.ts",
+          "purpose": "Painel lateral (notificações/ajuda) com open/close."
+        },
+        {
+          "path": "content-frame/content-frame.component.ts",
+          "purpose": "Frame do conteúdo com scroll/padding consistentes."
+        },
+        {
+          "path": "ui-layout.model.ts",
+          "purpose": "Tipos de estado do layout e interfaces de slots."
+        },
+        {
+          "path": "ui-layout.spec.ts",
+          "purpose": "Testes: render slots, collapse sidebar, mobile behavior (básico)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar LayoutShell com 4 slots e API clara (inputs para state e templates).",
+      "Criar Sidebar com modo collapsed e modo mobile drawer.",
+      "Criar Topbar com slots e suporte a sticky/responsive.",
+      "Criar RightPanel com open/close e integração via content projection.",
+      "Usar tokens para spacing/z-index e CSS vars para cores.",
+      "Criar testes mínimos (slots render, collapse, toggle drawer)."
+    ],
+    "acceptanceCriteria": [
+      "LayoutShell permite compor Topbar/Sidebar/Content/RightPanel sem hacks.",
+      "Sidebar suporta collapsed e mobile drawer.",
+      "Sem acoplamento a domínio: recebe menu model pronto por input.",
+      "Sem HttpClient e sem lógica de decisão de acesso.",
+      "Testes mínimos cobrem render de slots e toggles básicos."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 5,
+      "finalizationDays": 6
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Layout Composition (Slots)",
+          "goal": "Compor layout por slots de forma reutilizável e responsiva.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Content projection / templates",
+            "Responsividade e estados",
+            "Scroll containment e sticky"
+          ]
+        },
+        {
+          "title": "Separation: Layout vs Navigation",
+          "goal": "Manter layout desacoplado de menu/decisão.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Menu model como input",
+            "Não calcular visibilidade no layout",
+            "Testes de composição"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ui-layout: LayoutShell com 4 slots (Topbar/Sidebar/Content/RightPanel), Sidebar responsiva (collapsed + mobile drawer), Topbar e RightPanel com content projection, consumindo ui-tokens/ui-theme e sem acoplamento a domínio. Incluir testes mínimos de slots e toggles.",
+      "generationSteps": [
+        "Criar LayoutShell e modelos de estado.",
+        "Criar Sidebar/Topbar/RightPanel/ContentFrame.",
+        "Integrar tokens/tema (CSS vars).",
+        "Criar testes mínimos (slots + toggles)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Design System"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta API de slots e estados (collapsed/rightPanel)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem decisão de acesso dentro do layout",
+        "Testes cobrindo slots e toggles"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: AppShell usando LayoutShell com sidebar collapse e rightPanel"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ui-layout)",
+        "Guia: como compor páginas com ContentFrame/slots"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/shared/ui/ui-layout/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

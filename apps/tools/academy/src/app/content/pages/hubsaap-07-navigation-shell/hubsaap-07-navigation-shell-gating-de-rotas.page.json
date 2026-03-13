@@ -1,0 +1,149 @@
+{
+  "schema": "academy.page.v1",
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-03-10T00:00:00.000Z",
+  "page": {
+    "pageId": "hubsaap-07-navigation-shell-gating-de-rotas",
+    "trackId": "hubsaap-07-navigation-shell",
+    "lessonId": "hubsaap-07-navigation-shell-gating-de-rotas",
+    "title": "Gating de rotas",
+    "summary": "Como usar guards, feature flags e AccessDecisionService para proteger e condicionalmente expor rotas no Shell.",
+    "level": "Intermediario",
+    "tags": ["navigation", "shell", "routes", "tools"],
+    "alignment": {
+      "hubComponents": [
+        "AccessDecisionService",
+        "FeatureFlags",
+        "NavigationService"
+      ],
+      "refSpecPaths": [
+        "docs/policy-engine-implementation-summary.md",
+        "docs/navigation-service-documentation.json"
+      ],
+      "prerequisites": [
+        "hubsaap-07-navigation-shell-shell-responsabilida",
+        "hubsaap-07-navigation-shell-navigationservice"
+      ],
+      "seeAlso": [
+        "hubsaap-07-navigation-shell-layout-policy-por-pá",
+        "hubsaap-07-navigation-shell-boas-práticas-de-ux-"
+      ]
+    },
+    "estimatedMinutes": 35,
+    "sections": [
+      {
+        "type": "overview",
+        "id": "overview",
+        "title": "Flags, permissões e controle de rotas",
+        "summary": "Gating de rotas combina feature flags e AccessDecisionService para proteger e condicionar a exposição de rotas no Shell. A decisão final fica em um guard dedicado — não espalhada por templates ou components. O NavigationService filtra o menu de forma declarativa quando a rota está indisponível.",
+        "learningOutcomes": [
+          "Criar um guard que combina FeatureFlagsService e AccessDecisionService para proteger rotas.",
+          "Filtrar itens de menu via NavigationService quando flag está OFF ou acesso é negado.",
+          "Centralizar autorização no guard — eliminar verificações inline em templates.",
+          "Testar cenários de borda: flag ON/OFF × permissão presente/ausente."
+        ]
+      },
+      {
+        "type": "coreConcepts",
+        "id": "core-concepts",
+        "title": "Quando usar cada mecanismo",
+        "items": [
+          {
+            "term": "Guard",
+            "definition": "Intercepta navegação e decide permitir/negar com base em condições síncronas ou assíncronas. Uso: proteger rota de acesso não autorizado."
+          },
+          {
+            "term": "Feature Flag",
+            "definition": "Chave de configuração que ativa/desativa funcionalidades sem deploy. Uso: controlar visibilidade de rotas em rollout ou experimentos."
+          },
+          {
+            "term": "AccessDecisionService",
+            "definition": "Avalia políticas (RBAC/ABAC) e retorna allow/deny/capabilities. Uso: autorizar ou bloquear ações de usuário de forma centralizada."
+          }
+        ]
+      },
+      {
+        "type": "architectureContext",
+        "id": "architecture-context",
+        "title": "Camadas de proteção",
+        "bullets": [
+          "Guard: primeira barreira — verifica flag e acesso antes de carregar a rota.",
+          "NavigationService/menu: oculta itens de menu quando flag OFF ou acesso negado — filtragem declarativa.",
+          "AccessDecisionService: avalia decisão centralizada — sem lógica de autorização no template.",
+          "Cenários de teste: permissão (RBAC) ou feature flag (rollout/experimento) combinados."
+        ],
+        "componentMappings": [
+          "libs/feature-flags (FeatureFlagsService)",
+          "libs/access-decision (AccessDecisionService)",
+          "apps/shell/src/ (guards e routing)",
+          "libs/access-layer/src/lib/navigation/ (menu filtering)"
+        ]
+      },
+      {
+        "type": "implementationSteps",
+        "id": "implementation-steps",
+        "title": "Como implementar gating de rota",
+        "steps": [
+          "1) Defina a intenção: controle por permissão (RBAC) ou feature flag (rollout).",
+          "2) Criar um guard que consulta FeatureFlagsService e AccessDecisionService antes de permitir navegação.",
+          "3) Ao gerar o menu, filtrar rotas com base na decisão combinada (flag + access) via NavigationService.",
+          "4) Testar cenários: usuário sem permissão, flag OFF, flag ON + permissão."
+        ],
+        "validationChecks": [
+          "Rota acessível apenas quando AccessDecisionService retorna allow.",
+          "Flag OFF remove rota do menu (NavigationService filtra).",
+          "Guard retorna false e redireciona para /no-access quando negado.",
+          "Casos de borda documentados na PR (flag/permission combos)."
+        ]
+      },
+      {
+        "type": "codeExamples",
+        "id": "code-examples",
+        "title": "Guard de rota — exemplo mínimo",
+        "snippets": [
+          {
+            "language": "typescript",
+            "description": "RouteGateGuard consultando flags e access decision",
+            "code": "import { Injectable } from '@angular/core';\nimport { CanActivate, Router, ActivatedRouteSnapshot } from '@angular/router';\nimport { FeatureFlagsService } from 'libs/feature-flags';\nimport { AccessDecisionService } from 'libs/access-decision';\n\n@Injectable({ providedIn: 'root' })\nexport class RouteGateGuard implements CanActivate {\n  constructor(\n    private flags: FeatureFlagsService,\n    private access: AccessDecisionService,\n    private router: Router\n  ) {}\n\n  async canActivate(route: ActivatedRouteSnapshot) {\n    const featureKey = route.data?.feature as string | undefined;\n    if (featureKey && !this.flags.isEnabled(featureKey)) {\n      return false; // feature disabled\n    }\n    const resource = route.data?.resource || route.url.join('/');\n    const decision = await this.access.decide({ action: 'view', resource });\n    if (decision.allow) return true;\n    this.router.navigate(['/no-access']);\n    return false;\n  }\n}"
+          }
+        ]
+      },
+      {
+        "type": "checklist",
+        "id": "checklist",
+        "title": "Critérios de aceitação",
+        "items": [
+          "Rota acessível apenas quando AccessDecisionService retorna allow.",
+          "Flag OFF remove rota do menu (NavigationService filtra).",
+          "Guard retorna false e redireciona para /no-access quando negado.",
+          "Sem lógica de autorização inline no template ou component.",
+          "Casos de borda documentados na PR (flag ON/OFF × permissão ausente/presente).",
+          "Exemplo de teste manual descrito no PR."
+        ]
+      },
+      {
+        "type": "resources",
+        "id": "resources",
+        "title": "Recursos e referências",
+        "items": [
+          {
+            "title": "Policy Engine Implementation Summary",
+            "path": "docs/policy-engine-implementation-summary.md"
+          },
+          {
+            "title": "Navigation Service",
+            "path": "docs/navigation-service-documentation.json"
+          },
+          {
+            "title": "Shell: responsabilidades e contratos",
+            "refLessonId": "hubsaap-07-navigation-shell-shell-responsabilida"
+          },
+          {
+            "title": "NavigationService",
+            "refLessonId": "hubsaap-07-navigation-shell-navigationservice"
+          }
+        ]
+      }
+    ]
+  }
+}

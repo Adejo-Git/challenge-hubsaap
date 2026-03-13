@@ -1,0 +1,30 @@
+{
+  "name": "patterns-timeline",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "libs/shared/ui/patterns-timeline",
+  "sourceRoot": "libs/shared/ui/patterns-timeline/src",
+  "prefix": "hub",
+  "projectType": "library",
+  "tags": ["type:shared", "scope:platform"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/shared/ui/patterns-timeline/jest.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/shared/ui/patterns-timeline/src --ext .ts"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p libs/shared/ui/patterns-timeline/tsconfig.lib.json"
+      }
+    }
+  }
+}

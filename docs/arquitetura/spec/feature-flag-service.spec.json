@@ -1,0 +1,198 @@
+{
+  "FeatureFlagService": {
+    "kind": "frontend",
+    "key": "FeatureFlagService",
+    "title": "FeatureFlagService",
+    "summary": "Facade do Access Layer para feature flags: expõe API estável e “hub-friendly” para Shell e Tools consumirem gating (isEnabled/watch/snapshot) sem acoplar diretamente à shared-lib feature-flags e seus detalhes.",
+    "function": "Atuar como o ponto único de consumo de feature flags dentro do Hub (Shell + Tools). Encapsula a shared-lib feature-flags e normaliza convenções de namespace (global e toolKey.featureKey), lifecycle de reload por troca de contexto, e API mínima para decisões e UI. Serve de ponte para o AccessDecisionService e RouteGuards, garantindo consistência e evitando imports diretos da lib feature-flags em apps.",
+    "whenRuns": [
+      "No bootstrap do Hub para disponibilizar flags para menu/rotas.",
+      "Ao trocar contexto (recalcular flags efetivas e notificar subscribers).",
+      "Quando Navigation/RouteGuards precisam avaliar tool/feature habilitada.",
+      "Quando Tools fazem gating interno leve por featureKey."
+    ],
+    "inputs": [
+      {
+        "name": "FeatureFlags (shared-lib)",
+        "detail": "Engine de resolução (defaults/overrides/rules simples) e streams reativos."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Troca de contexto aciona invalidate/recompute (orquestração no Access Layer)."
+      },
+      {
+        "name": "Tool contract flags (opcional)",
+        "detail": "ToolFeatureFlags para namespace/catálogo (capabilities declaradas por tool)."
+      },
+      {
+        "name": "ObservabilityService (opcional)",
+        "detail": "Eventos mínimos: flags.loaded/contextChanged/overrideUsed."
+      },
+      {
+        "name": "isEnabled(key)",
+        "detail": "True/false determinístico (global e toolKey.featureKey)."
+      },
+      {
+        "name": "watch(key)",
+        "detail": "Observable/Signal que emite mudanças da flag específica."
+      },
+      {
+        "name": "snapshot()",
+        "detail": "Snapshot seguro do mapa efetivo (sem expor internals)."
+      },
+      {
+        "name": "tool(toolKey).isEnabled(featureKey)",
+        "detail": "Helper de namespace para Tools (ergonomia)."
+      },
+      {
+        "name": "explain(key) (opcional)",
+        "detail": "Razão/origem (default/override/rule) para troubleshooting."
+      }
+    ],
+    "responsibilities": [
+      "Ser a API oficial de flags para o Hub (Shell/Tools) via Access Layer.",
+      "Encapsular feature-flags e evitar imports diretos na app.",
+      "Aplicar e reforçar namespace (global e toolKey.featureKey).",
+      "Orquestrar invalidate/recompute em context change (via ContextService).",
+      "Oferecer API mínima e estável para AccessDecision/RouteGuards/UI."
+    ],
+    "nonResponsibilities": [
+      "Não implementar resolução de flags novamente (isso é feature-flags).",
+      "Não substituir autorização (flag ≠ permissão; decisão final é AccessDecisionService).",
+      "Não expor mecanismos internos (rules engine, storage overrides, merge strategy).",
+      "Não fazer HTTP direto para sync de flags."
+    ],
+    "dependencies": [
+      {
+        "name": "feature-flags",
+        "why": "Implementação core de resolução e API base."
+      },
+      {
+        "name": "ContextService",
+        "why": "Gatilho de recompute quando contexto muda."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados: MissingFlagKey, InvalidNamespace."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Eventos mínimos de lifecycle para troubleshooting."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/flags/",
+      "files": [
+        {
+          "path": "feature-flag.service.ts",
+          "purpose": "Facade: isEnabled/watch/snapshot + helper tool(toolKey)."
+        },
+        {
+          "path": "feature-flag.model.ts",
+          "purpose": "Tipos: FlagKey, ToolKey, FeatureKey, FlagSnapshotLite."
+        },
+        {
+          "path": "feature-flag.namespace.ts",
+          "purpose": "Helpers: build global/tool namespaces e validações."
+        },
+        {
+          "path": "feature-flag.adapters.ts",
+          "purpose": "Adapter entre FeatureFlags (shared-lib) e API lite do Access Layer."
+        },
+        {
+          "path": "feature-flag.spec.ts",
+          "purpose": "Testes: namespace, watch, snapshot e recompute por context change."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir helpers de namespace: global key e toolKey.featureKey.",
+      "Implementar facade delegando ao FeatureFlags (shared-lib) e mapeando para API lite.",
+      "Conectar ContextService: ao context change, acionar invalidate/recompute (se necessário).",
+      "Expor helpers ergonomia: tool(toolKey).isEnabled(featureKey).",
+      "Cobrir testes: namespace válido, watch emite, snapshot estável, context change recalcula."
+    ],
+    "acceptanceCriteria": [
+      "Shell/Tools consomem flags via FeatureFlagService (Access Layer), não via feature-flags direto.",
+      "Namespace global e por tool funciona e evita colisões.",
+      "Troca de contexto recalcula e notifica watchers.",
+      "Sem HTTP direto e sem duplicar lógica de resolução.",
+      "Testes mínimos cobrem namespace e context change."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Facade for Flags",
+          "goal": "Desacoplar consumo de flags da implementação interna.",
+          "level": "Base",
+          "knowledge": [
+            "Namespace",
+            "watch/snapshot",
+            "Reatividade com contexto"
+          ]
+        },
+        {
+          "title": "Flags + Decisions",
+          "goal": "Integrar flags ao access-decision sem confundir com autorização.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Gating vs permission",
+            "Uso em menu/rotas",
+            "Troubleshooting com explain"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar FeatureFlagService (Access Layer): facade sobre feature-flags, API isEnabled/watch/snapshot, helpers tool(toolKey).isEnabled(featureKey), namespace/validação e testes mínimos (namespace, watch, context change).",
+      "generationSteps": [
+        "Criar model lite e helpers de namespace.",
+        "Criar facade delegando à shared-lib.",
+        "Integrar com ContextService para recompute.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Access Layer"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "Shell não importa feature-flags diretamente",
+        "Namespace toolKey.featureKey documentado",
+        "Gates passando",
+        "Testes de context change incluídos"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: flag desliga item de menu/rota via AccessDecision"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (FeatureFlagService)",
+        "Guia: como usar flags em Shell/Tools via Access Layer"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

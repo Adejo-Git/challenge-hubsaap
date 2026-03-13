@@ -1,0 +1,116 @@
+<ui-content-frame>
+<div class="patterns-timeline" [class.compact]="uiOptions?.compact" [attr.data-theme]="activeThemeKey">
+  <ng-container *ngIf="state === 'loading'">
+    <div class="skeleton" data-testid="timeline-loading">Carregando timeline...</div>
+  </ng-container>
+
+  <ng-container *ngIf="state === 'error'">
+    <div class="error" data-testid="timeline-error">{{ error?.message || 'Erro ao carregar timeline' }}</div>
+  </ng-container>
+
+  <ng-container *ngIf="showReadyState">
+    <ng-container *ngIf="!showEmptyState; else emptyTpl">
+      <ng-container *ngIf="useVirtualScroll; else groupedView">
+        <cdk-virtual-scroll-viewport
+          class="timeline-viewport"
+          [itemSize]="virtualScrollItemSize"
+          [style.height.px]="virtualScrollHeightPx"
+        >
+          <div *cdkVirtualFor="let row of virtualRows; trackBy: trackByVirtualRow" class="virtual-row">
+            <ng-container [ngSwitch]="row.kind">
+              <div *ngSwitchCase="'group'" class="group-header" [class.sticky]="uiOptions?.stickyGroupHeaders">
+                {{ row.label }}
+              </div>
+              <button
+                *ngSwitchCase="'item'"
+                type="button"
+                class="item"
+                (click)="onItemClick(row.item)"
+                [attr.aria-label]="getItemAriaLabel(row.item)"
+              >
+                <ng-container *ngIf="renderers?.itemHeader; else defaultHeaderVirtual">
+                  <ng-container *ngTemplateOutlet="renderers?.itemHeader; context: { $implicit: row.item }"></ng-container>
+                </ng-container>
+                <ng-template #defaultHeaderVirtual>
+                  <div class="item-title-wrap">
+                    <span *ngIf="uiOptions?.showAvatars && row.item.actor" class="item-avatar" aria-hidden="true">
+                      {{ row.item.actor?.[0] | uppercase }}
+                    </span>
+                    <div class="item-title">{{ row.item.title }}</div>
+                  </div>
+                </ng-template>
+
+                <ng-container *ngIf="renderers?.itemBody; else defaultBodyVirtual">
+                  <ng-container *ngTemplateOutlet="renderers?.itemBody; context: { $implicit: row.item }"></ng-container>
+                </ng-container>
+                <ng-template #defaultBodyVirtual>
+                  <div class="item-desc">{{ row.item.description }}</div>
+                  <div class="item-tags" *ngIf="uiOptions?.showTags && row.item.tags?.length">
+                    <span class="item-tag" *ngFor="let tag of row.item.tags">{{ tag }}</span>
+                  </div>
+                </ng-template>
+
+                <ng-container *ngIf="renderers?.itemFooter">
+                  <ng-container *ngTemplateOutlet="renderers?.itemFooter; context: { $implicit: row.item }"></ng-container>
+                </ng-container>
+                <ng-container *ngIf="!renderers?.itemFooter">
+                  <div class="item-meta">{{ formatItemTimestamp(row.item.timestamp) }}</div>
+                </ng-container>
+              </button>
+            </ng-container>
+          </div>
+        </cdk-virtual-scroll-viewport>
+      </ng-container>
+
+      <ng-template #groupedView>
+        <div *ngFor="let g of grouped; trackBy: trackByGroup" class="group">
+          <div class="group-header" [class.sticky]="uiOptions?.stickyGroupHeaders">{{ g.label }}</div>
+          <div class="group-items">
+            <button
+              *ngFor="let item of g.items; trackBy: trackByItem"
+              type="button"
+              class="item"
+              (click)="onItemClick(item)"
+              [attr.aria-label]="getItemAriaLabel(item)"
+            >
+              <ng-container *ngIf="renderers?.itemHeader; else defaultHeader">
+                <ng-container *ngTemplateOutlet="renderers?.itemHeader; context: { $implicit: item }"></ng-container>
+              </ng-container>
+              <ng-template #defaultHeader>
+                <div class="item-title-wrap">
+                  <span *ngIf="uiOptions?.showAvatars && item.actor" class="item-avatar" aria-hidden="true">{{ item.actor?.[0] | uppercase }}</span>
+                  <div class="item-title">{{ item.title }}</div>
+                </div>
+              </ng-template>
+
+              <ng-container *ngIf="renderers?.itemBody; else defaultBody">
+                <ng-container *ngTemplateOutlet="renderers?.itemBody; context: { $implicit: item }"></ng-container>
+              </ng-container>
+              <ng-template #defaultBody>
+                <div class="item-desc">{{ item.description }}</div>
+                <div class="item-tags" *ngIf="uiOptions?.showTags && item.tags?.length">
+                  <span class="item-tag" *ngFor="let tag of item.tags">{{ tag }}</span>
+                </div>
+              </ng-template>
+
+              <ng-container *ngIf="renderers?.itemFooter">
+                <ng-container *ngTemplateOutlet="renderers?.itemFooter; context: { $implicit: item }"></ng-container>
+              </ng-container>
+              <ng-container *ngIf="!renderers?.itemFooter">
+                <div class="item-meta">{{ formatItemTimestamp(item.timestamp) }}</div>
+              </ng-container>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+
+      <div class="load-more" *ngIf="canLoadMore">
+        <button type="button" (click)="onLoadMore()">Carregar mais</button>
+      </div>
+    </ng-container>
+    <ng-template #emptyTpl>
+      <div class="empty" data-testid="timeline-empty">Nenhuma atividade encontrada.</div>
+    </ng-template>
+  </ng-container>
+</div>
+</ui-content-frame>

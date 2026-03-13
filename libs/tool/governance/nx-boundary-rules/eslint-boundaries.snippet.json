@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "@nx/enforce-module-boundaries": [
+      "error",
+      {
+        "allow": [],
+        "enforceBuildableLibDependency": true,
+        "depConstraints": [
+          { "sourceTag": "type:shell", "onlyDependOnLibsWithTags": ["type:access", "type:shared"] },
+          { "sourceTag": "type:tool", "onlyDependOnLibsWithTags": ["type:shared", "type:contracts", "scope:<toolKey>"] },
+          { "sourceTag": "type:access", "onlyDependOnLibsWithTags": ["type:domain", "type:contracts", "type:shared"] },
+          { "sourceTag": "type:domain", "onlyDependOnLibsWithTags": ["type:contracts", "type:shared"] },
+          { "sourceTag": "type:shared", "onlyDependOnLibsWithTags": ["type:shared", "type:contracts"] },
+          { "sourceTag": "type:contracts", "onlyDependOnLibsWithTags": ["type:domain", "type:shared", "type:access", "type:tool"] },
+          { "sourceTag": "*", "onlyDependOnLibsWithTags": ["*"] }
+        ]
+      }
+    ]
+  }
+}

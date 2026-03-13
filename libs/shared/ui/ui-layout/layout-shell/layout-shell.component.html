@@ -1,0 +1,26 @@
+<!-- // src\app\lib\ui-layout\layout-shell\layout-shell.component.html -->
+
+<div class="ui-layout-shell">
+  <!-- Topbar slot -->
+  <div class="ui-layout-shell__topbar">
+    <ng-content select="ui-topbar"></ng-content>
+  </div>
+
+  <!-- Body -->
+  <div class="ui-layout-shell__body">
+    <!-- Sidebar slot -->
+    <div class="ui-layout-shell__sidebar">
+      <ng-content select="ui-sidebar"></ng-content>
+    </div>
+
+    <!-- Content slot -->
+    <div class="ui-layout-shell__content">
+      <ng-content select="ui-content-frame"></ng-content>
+    </div>
+
+    <!-- Right panel slot -->
+    <div class="ui-layout-shell__right-panel">
+      <ng-content select="ui-right-panel"></ng-content>
+    </div>
+  </div>
+</div>

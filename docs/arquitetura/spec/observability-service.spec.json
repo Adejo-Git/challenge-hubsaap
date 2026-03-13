@@ -1,0 +1,240 @@
+{
+  "ObservabilityService": {
+    "kind": "frontend",
+    "key": "ObservabilityService",
+    "title": "ObservabilityService",
+    "summary": "Shared Infra/Data de observabilidade no frontend: padroniza telemetria (eventos/exceções/breadcrumbs), mantém correlationId persistente por sessão e expõe provider plugável (console/Sentry/Azure Monitor/ELK) sem acoplamento.",
+    "function": "Fornecer uma API única e estável para observabilidade no Hub-Saap, garantindo (1) correlação consistente via correlationId persistente na sessão, (2) captura padronizada de eventos e exceções com contexto mínimo seguro, (3) trilha de breadcrumbs para debugging e suporte, e (4) adaptabilidade via padrão Provider para trocar backend de telemetria (Console, Sentry, Azure Monitor, ELK/OTEL) sem alterar consumidores. Serve a Shell, Shared Infra (interceptores), Access Layer (decisões/guards), e UI (ErrorPageComponent) apenas como cliente de telemetria, nunca como fonte de decisão.",
+    "whenRuns": [
+      "No bootstrap do Hub para iniciar contexto e correlationId (ou restaurar o existente na sessão).",
+      "A cada navegação relevante (Router events) para registrar page context (opcional).",
+      "Em falhas tratadas e não tratadas (captureException) originadas por guard/interceptor/erro global.",
+      "Quando houver eventos técnicos (trackEvent) e breadcrumbs (addBreadcrumb) durante fluxos críticos.",
+      "Em chamadas HTTP via HttpTelemetryInterceptor para correlacionar requests e capturar falhas/latência."
+    ],
+    "inputs": [
+      {
+        "name": "RuntimeConfig / FeatureFlags",
+        "detail": "Habilitar/desabilitar telemetria, sampling, provider ativo, endpoint, nível de verbosidade e limites."
+      },
+      {
+        "name": "Session/Context snapshot (opcional)",
+        "detail": "Somente ids/keys (tenant/projeto/ambiente/toolKey) para contexto seguro, sem PII."
+      },
+      {
+        "name": "Router snapshot (opcional)",
+        "detail": "URL/routeKey para correlacionar eventos de UI e page context."
+      },
+      {
+        "name": "ErrorModel (shared)",
+        "detail": "Modelo padronizado de erro (status/code, correlationId, url, safeMessage) para exceptions e páginas de erro."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "captureException(error, context)",
+        "detail": "Captura exceções com contexto mínimo seguro e correlationId."
+      },
+      {
+        "name": "trackEvent(name, properties)",
+        "detail": "Registra eventos técnicos/funcionais com propriedades allowlisted e correlationId."
+      },
+      {
+        "name": "addBreadcrumb(message, category)",
+        "detail": "Registra breadcrumb (passos) com categoria e severity opcional."
+      },
+      {
+        "name": "getCorrelationId()",
+        "detail": "Exposição do correlationId atual para interceptores/headers e logs locais."
+      },
+      {
+        "name": "setContext(partialContext)",
+        "detail": "Atualiza o contexto mínimo (toolKey, tenantId, routeKey) de forma segura."
+      }
+    ],
+    "responsibilities": [
+      "Manter um correlationId persistente durante a sessão do usuário (mesma sessão → mesmo correlationId).",
+      "Gerar correlationId no bootstrap se inexistente e armazenar em storage de sessão (ex.: sessionStorage) com namespace e versionamento.",
+      "Expor getCorrelationId() para ser consumido por HttpTelemetryInterceptor e por logs de UI (ex.: ErrorPageComponent).",
+      "Padronizar contratos de telemetria: captureException, trackEvent, addBreadcrumb — com nomes e payloads consistentes.",
+      "Aplicar sanitização agressiva e allowlist de propriedades (truncamento, redaction, limites de tamanho e profundidade).",
+      "Encapsular vendor por Provider (ConsoleProvider, SentryProvider, AzureMonitorProvider, ElkOtelProvider) sem alterar consumidores.",
+      "Suportar disable total e sampling por ambiente (dev/qa/prod) via runtime-config."
+    ],
+    "dependencies": [
+      {
+        "name": "runtime-config/config-runtime",
+        "why": "Define provider ativo, sampling, endpoints e nível de telemetria por ambiente."
+      },
+      {
+        "name": "i18n-core (opcional)",
+        "why": "Padronização de nomes/mensagens para categorias ou labels (se necessário)."
+      },
+      {
+        "name": "error-model (shared)",
+        "why": "Normalização e segurança do modelo de erro exibido e registrado."
+      },
+      {
+        "name": "Storage (session)",
+        "why": "Persistência do correlationId na sessão (sessionStorage ou storage-service com policy)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/observability/src/lib/",
+      "files": [
+        {
+          "path": "observability.service.ts",
+          "purpose": "API principal: captureException/trackEvent/addBreadcrumb + correlation + context + sanitize."
+        },
+        {
+          "path": "observability.provider.ts",
+          "purpose": "Interface do provider e contrato de implementação (vendor-agnostic)."
+        },
+        {
+          "path": "providers/console.provider.ts",
+          "purpose": "Provider default para dev/qa (console.*) respeitando sanitize."
+        },
+        {
+          "path": "providers/sentry.provider.ts (opcional)",
+          "purpose": "Provider Sentry (plugável) sem alterar consumidores."
+        },
+        {
+          "path": "providers/azure-monitor.provider.ts (opcional)",
+          "purpose": "Provider Azure Monitor/AppInsights (plugável)."
+        },
+        {
+          "path": "providers/elk-otel.provider.ts (opcional)",
+          "purpose": "Provider ELK/OTEL (plugável)."
+        },
+        {
+          "path": "observability.correlation.ts",
+          "purpose": "Gerador, restore/persist de correlationId e helpers de propagação."
+        },
+        {
+          "path": "observability.sanitize.ts",
+          "purpose": "Sanitização: allowlist, redaction, truncamento, size limits."
+        },
+        {
+          "path": "observability.models.ts",
+          "purpose": "Tipos: TelemetryContext, TelemetryEvent, Breadcrumb, ExceptionPayload."
+        },
+        {
+          "path": "observability.config.ts",
+          "purpose": "Leitura de runtime-config e defaults seguros."
+        },
+        {
+          "path": "observability.service.spec.ts",
+          "purpose": "Testes: persistência do correlationId, sanitize, provider switching, sampling."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir TelemetryContext mínimo: { app, env, toolKey?, routeKey?, tenantId?, projectId? } (somente IDs).",
+      "Implementar correlationId persistente por sessão: ao inicializar, tentar restore do storage; se ausente, gerar e persistir (sessionStorage).",
+      "Expor getCorrelationId() e garantir que sempre retorne valor válido após bootstrap.",
+      "Definir contratos de métodos (assinaturas) estáveis:",
+      " - captureException(error: unknown, context?: { correlationId?: string; url?: string; code?: string|number; tags?: Record<string,string>; extra?: Record<string,unknown> }): void",
+      " - trackEvent(name: string, properties?: Record<string, unknown>): void",
+      " - addBreadcrumb(message: string, category: 'nav'|'http'|'auth'|'tool'|'ui'|'system'|string, level?: 'info'|'warn'|'error'): void",
+      "Aplicar sanitização antes de enviar ao provider: remover tokens, senhas, documentos, headers sensíveis; truncar strings; limitar profundidade.",
+      "Implementar Provider interface com fallback para ConsoleProvider e capability de troca por config:",
+      " - interface ObservabilityProvider { captureException(payload); trackEvent(payload); addBreadcrumb(payload); flush?(): Promise<void> }",
+      "Implementar setContext(partial) para atualizar contexto quando trocar tool/rota/tenant (sem PII)."
+    ],
+    "acceptanceCriteria": [
+      "correlationId é estável durante a sessão (refresh dentro da sessão preserva) e muda apenas em nova sessão (ou reset explícito).",
+      "captureException/trackEvent/addBreadcrumb existem com assinaturas definidas e payload sanitizado.",
+      "getCorrelationId() é consumível por interceptores e UI (ErrorPageComponent) sem acoplamento a vendor.",
+      "Provider é plugável: trocar Console→Sentry/Azure/ELK via config sem alterar consumidores.",
+      "Não envia dados sensíveis (tokens/senhas/documentos) para provedores; sanitize testado."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Frontend Telemetry (Provider Pattern)",
+          "goal": "Desacoplar observabilidade de vendors com API estável e segura.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Provider pattern",
+            "Sanitização/allowlist",
+            "Sampling por ambiente"
+          ]
+        },
+        {
+          "title": "Correlation & Traceability",
+          "goal": "Garantir rastreabilidade ponta-a-ponta com correlationId persistente.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Session correlationId",
+            "Propagação via headers",
+            "Context mínimo seguro"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ObservabilityService (Shared Infra/Data) com correlationId persistente em sessão, contratos captureException/trackEvent/addBreadcrumb, provider plugável (console default) e sanitize agressivo (sem tokens/senhas/documentos), incluindo testes de persistência, provider switch e sanitize.",
+      "generationSteps": [
+        "Criar models + provider interface + console provider.",
+        "Criar correlation module com restore/persist session.",
+        "Criar sanitize com allowlist/redaction/truncamento.",
+        "Criar service com métodos e integração com config.",
+        "Criar testes: correlation persistente, sanitize, provider swapping."
+      ],
+      "tags": [
+        "SharedInfra",
+        "Provider",
+        "CorrelationId",
+        "Security",
+        "Nx-safe"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "correlationId persistente e testado (session restore)",
+        "Assinaturas de métodos conforme contrato",
+        "Provider plugável por runtime-config (sem acoplamento vendor)",
+        "Sanitização agressiva com testes (sem tokens/senhas/documentos)",
+        "Boundaries passando (Nx enforce-module-boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass (lint/tests/boundaries)",
+        "Demo: trackEvent + addBreadcrumb + captureException com correlationId",
+        "Exemplo: trocar provider via config sem alterar consumidores"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Catálogo: ObservabilityService (API + exemplos)",
+        "Playbook: regras de sanitize/allowlist e dados proibidos",
+        "Guia: Provider pattern (como adicionar Sentry/Azure/ELK)",
+        "Guia: correlationId e propagação em HTTP"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não renderiza UI nem dashboards de observabilidade.",
+      "Não é fonte de auditoria oficial (não substitui logs backend).",
+      "Não toma decisões de permissão/policy (apenas registra).",
+      "NÃO deve enviar dados sensíveis (tokens, senhas, documentos) para provedores externos."
+    ],
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/observability/jest.config.ts"
+      }
+    }
+  }
+}

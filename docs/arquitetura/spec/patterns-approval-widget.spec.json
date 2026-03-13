@@ -1,0 +1,255 @@
+{
+  "PatternsApprovalWidget": {
+    "kind": "frontend",
+    "key": "PatternsApprovalWidget",
+    "title": "PatternsApprovalWidget",
+    "summary": "Pattern reutilizável de aprovação: padroniza fluxo de aprovar/rejeitar/solicitar ajustes, comentários, estados (pending/approved/rejected), trilha de decisão e integração com handlers externos (sem domínio e sem HTTP direto).",
+    "function": "Fornecer um widget/pattern de aprovação para uso no Hub e nas Tools (ex.: gates, decisões, publish, validações). Encapsula UI e estado de interação: exibição do status atual, ações disponíveis (approve/reject/request-changes), captura de comentário/motivo, confirmação, busy state, e emissão de eventos padronizados para o consumidor executar a ação real (via data-access). Também suporta exibição de histórico/últimas decisões quando fornecido.",
+    "whenRuns": [
+      "Quando uma entidade exige decisão humana (aprovar/rejeitar/solicitar ajuste).",
+      "Quando telas exibem estado de gate (pendente/aprovado/reprovado).",
+      "Quando é necessário capturar comentário/motivo junto da decisão.",
+      "Quando o fluxo exige confirmação e prevenção de double-submit."
+    ],
+    "inputs": [
+      {
+        "name": "subject",
+        "detail": "Referência da entidade alvo (id, type, title opcional) para display e eventos."
+      },
+      {
+        "name": "status",
+        "detail": "Estado atual: pending | approved | rejected | changesRequested | blocked."
+      },
+      {
+        "name": "availableActions",
+        "detail": "Ações habilitadas (conforme decisão externa por permissão/flag)."
+      },
+      {
+        "name": "policyHints",
+        "detail": "Mensagens/razões de bloqueio (quando action não disponível) - opcional."
+      },
+      {
+        "name": "history",
+        "detail": "Histórico de decisões (opcional): últimas decisões com ator, data, comentário."
+      },
+      {
+        "name": "busy",
+        "detail": "Estado externo de execução (desabilita UI enquanto consumer executa)."
+      },
+      {
+        "name": "uiOptions",
+        "detail": "Modo compacto, labels custom, exigir comentário para rejeição, etc."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "approve",
+        "detail": "Emite decisão de aprovação com payload (subject + comment opcional + metadata)."
+      },
+      {
+        "name": "reject",
+        "detail": "Emite decisão de rejeição com payload (subject + reason/comment)."
+      },
+      {
+        "name": "requestChanges",
+        "detail": "Emite decisão de solicitar ajustes com payload (subject + comment)."
+      },
+      {
+        "name": "cancel",
+        "detail": "Emite cancelamento/fechamento do widget (ex.: modal) sem ação."
+      },
+      {
+        "name": "validationError",
+        "detail": "Emite erro de validação local (ex.: comentário obrigatório ausente)."
+      }
+    ],
+    "responsibilities": [
+      "Exibir status atual com visual padronizado (pending/approved/rejected/etc.).",
+      "Renderizar apenas ações fornecidas (availableActions) — sem decidir permissão internamente.",
+      "Capturar comentário/motivo conforme regras configuráveis (ex.: rejeição exige comentário).",
+      "Controlar busy state e prevenir double-submit.",
+      "Solicitar confirmação quando configurado (ex.: rejeição irreversível).",
+      "Opcionalmente exibir histórico (quando fornecido) usando pattern timeline ou lista.",
+      "Emitir eventos padronizados com payload mínimo e seguro."
+    ],
+    "nonResponsibilities": [
+      "Não executar aprovação no backend (consumer/data-access faz).",
+      "Não fazer chamadas HTTP (sem HttpClient).",
+      "Não decidir quais ações estão habilitadas (isso vem de access-decision/policies).",
+      "Não armazenar histórico nem persistir comentário localmente além do necessário.",
+      "Não implementar workflow completo (apenas UI/pattern de decisão)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-components",
+        "why": "Buttons, modal/confirm, inputs/textarea, badges e alerts."
+      },
+      {
+        "name": "ui-layout",
+        "why": "Estrutura/slots quando usado em páginas/side panels."
+      },
+      {
+        "name": "ui-tokens",
+        "why": "Estados e variações visuais sem hardcode."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Cores/variants conforme tema."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados para validação local e falhas reportadas pelo consumer."
+      },
+      {
+        "name": "patterns-timeline (opcional)",
+        "why": "Reuso para exibir histórico de decisões de forma consistente."
+      },
+      {
+        "name": "audit-ui-helpers (opcional)",
+        "why": "Gerar evidência local da decisão (com correlationId) quando necessário."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/ui/patterns-approval-widget/src/lib/",
+      "files": [
+        {
+          "path": "approval-widget.component.ts",
+          "purpose": "Componente principal: status + ações + captura de comentário."
+        },
+        {
+          "path": "approval-widget.component.html",
+          "purpose": "Template: status badge, actions, comment box, confirm modal."
+        },
+        {
+          "path": "approval-widget.component.scss",
+          "purpose": "Ajustes mínimos (status variants) via tokens."
+        },
+        {
+          "path": "approval-widget.model.ts",
+          "purpose": "Tipos: ApprovalStatus, ApprovalAction, SubjectRef, HistoryItem, Payloads."
+        },
+        {
+          "path": "approval-widget.util.ts",
+          "purpose": "Helpers: validação de comentário obrigatório, payload builder."
+        },
+        {
+          "path": "approval-widget.confirm.ts",
+          "purpose": "Util para confirmação (ex.: rejeição) usando ui-components modal."
+        },
+        {
+          "path": "approval-widget.spec.ts",
+          "purpose": "Testes: ações habilitadas, comentário obrigatório, busy, eventos."
+        },
+        {
+          "path": "approval-widget.stories.ts",
+          "purpose": "Storybook: pending→approve, reject com comment, history on/off."
+        },
+        {
+          "path": "README.md",
+          "purpose": "Como usar: inputs/outputs, exemplos e anti-patterns."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir modelos (status/actions/subject/history) e payload mínimo seguro.",
+      "Implementar renderização de status e ações conforme availableActions.",
+      "Implementar captura de comentário com regra configurável (comment required on reject/changes).",
+      "Implementar confirmação opcional via modal/confirm do ui-components.",
+      "Implementar busy state (disable UI) e prevenção de double-submit.",
+      "Emitir eventos approve/reject/requestChanges com payload padronizado.",
+      "Integrar exibição de history (opcional) com lista simples ou patterns-timeline.",
+      "Criar stories e testes mínimos."
+    ],
+    "acceptanceCriteria": [
+      "Ações exibidas batem com availableActions (sem lógica interna de permissão).",
+      "Approve/Reject/RequestChanges emitem eventos com payload correto.",
+      "Comentário obrigatório é validado e bloqueia envio quando necessário.",
+      "Busy state desabilita controles e previne double-submit.",
+      "Confirmação opcional funciona (ex.: rejeição).",
+      "Sem HttpClient e sem lógica de domínio.",
+      "Testes mínimos cobrem regras principais e eventos."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Approval UX Pattern",
+          "goal": "Construir widget de aprovação reutilizável e previsível.",
+          "level": "Base",
+          "knowledge": [
+            "Estados (pending/approved/rejected)",
+            "Validação local (comentário obrigatório)",
+            "Busy state e confirmação"
+          ]
+        },
+        {
+          "title": "Separation: Decision UI vs Authorization",
+          "goal": "Separar UI de aprovação da decisão de permissão/policy.",
+          "level": "Intermediário",
+          "knowledge": [
+            "availableActions vindo do access-decision",
+            "Payload mínimo e seguro",
+            "Histórico opcional e composição"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar PatternsApprovalWidget: componente de aprovação com status (pending/approved/rejected/changesRequested), ações configuráveis (availableActions), captura de comentário (obrigatório em reject/changes), confirmação opcional, busy state, histórico opcional e eventos padronizados (approve/reject/requestChanges). Sem HttpClient e sem lógica de permissão interna. Incluir testes mínimos + stories.",
+      "generationSteps": [
+        "Criar models (status/actions/subject/history).",
+        "Criar componente + template com status + actions + comment.",
+        "Implementar validação e confirmação.",
+        "Implementar busy state e eventos.",
+        "Adicionar stories e testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Patterns",
+        "Approval"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta payloads dos eventos e regras de comentário obrigatório",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem lógica de permissão interna (availableActions externo)",
+        "Busy/confirm validados",
+        "Stories cobrindo approve e reject"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Storybook: pending→approve e reject com comentário obrigatório",
+        "Notas de decisão: quando exigir comentário e como exibir history"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do patterns-approval-widget)",
+        "README com exemplos e anti-patterns",
+        "Guia: integração com access-decision para calcular availableActions"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:ui",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/patterns-approval-widget/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

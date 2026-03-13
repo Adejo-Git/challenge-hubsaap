@@ -1,0 +1,74 @@
+@use '../../../shared/ui/ui-components/index.scss' as *;
+
+.patterns-timeline {
+  font-family: var(--ui-font-family-base);
+}
+.patterns-timeline.compact .item { padding: var(--ui-space-2) var(--ui-space-3); }
+.group { margin-bottom: var(--ui-space-3); }
+.group-header { font-weight: 600; margin-bottom: var(--ui-space-2); }
+.group-header.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ui-color-surface);
+}
+.timeline-viewport {
+  width: 100%;
+}
+.virtual-row {
+  padding-bottom: var(--ui-space-2);
+}
+.group-items { display: grid; gap: var(--ui-space-2); }
+.item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--ui-space-3);
+  border-left: 2px solid var(--ui-color-border);
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  background: var(--ui-color-surface);
+  cursor: pointer;
+}
+.item:focus-visible {
+  outline: 2px solid var(--ui-color-border-strong, var(--ui-color-border));
+  outline-offset: 2px;
+}
+.item-title { font-size: var(--ui-font-size-sm); font-weight: 600; }
+.item-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+.item-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--ui-space-4) + var(--ui-space-2));
+  height: calc(var(--ui-space-4) + var(--ui-space-2));
+  border-radius: 999px;
+  background: var(--ui-color-surface-muted, var(--ui-color-surface));
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-xs, var(--ui-font-size-sm));
+  font-weight: 600;
+}
+.item-desc { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+  margin-top: var(--ui-space-1);
+}
+.item-tag {
+  font-size: var(--ui-font-size-xs, var(--ui-font-size-sm));
+  color: var(--ui-color-text-muted);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-sm, 4px);
+  padding: 0 var(--ui-space-1);
+}
+.item-meta { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-xs, var(--ui-font-size-sm)); }
+.skeleton,
+.empty { color: var(--ui-color-text-muted); }
+.error { color: var(--ui-color-danger); }
+.load-more { margin-top: var(--ui-space-2); }

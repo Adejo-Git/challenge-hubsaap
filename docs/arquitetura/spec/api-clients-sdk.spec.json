@@ -1,0 +1,188 @@
+{
+  "ApiClientsSdk": {
+    "kind": "frontend",
+    "key": "ApiClientsSdk",
+    "title": "ApiClientsSdk",
+    "summary": "SDK HTTP tipado para consumo de APIs no frontend: fornece clients por domínio/serviço, padroniza chamadas, erros e contratos sem acoplar UI ao transporte.",
+    "function": "Centralizar clientes HTTP tipados para APIs do backend (Hub e Tools). Fornece uma camada fina sobre HttpClient + http-base para expor métodos semânticos (ex.: getProject, listTools, saveDraft) com contratos claros, tratamento de erro padronizado (error-model) e sem lógica de UI.",
+    "whenRuns": [
+      "Quando componentes/services precisam acessar APIs do backend via métodos tipados.",
+      "Quando data-access-* encapsula chamadas específicas de domínio.",
+      "Quando interceptors (http-base/auth-interceptor) já estão ativos no pipeline."
+    ],
+    "inputs": [
+      {
+        "name": "HttpClient",
+        "detail": "Transporte Angular com chain de interceptors do http-base."
+      },
+      {
+        "name": "Runtime Config",
+        "detail": "Base URLs, versionamento de API, timeouts e toggles por ambiente."
+      },
+      {
+        "name": "ErrorModel",
+        "detail": "Normalização de erros HTTP para StandardError."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Typed API clients",
+        "detail": "Clients por domínio (HubClient, ToolClient, etc.) com métodos semânticos."
+      },
+      {
+        "name": "Observable/Promise responses",
+        "detail": "Respostas tipadas (DTOs) sem shape de HttpResponse."
+      },
+      {
+        "name": "Standard errors",
+        "detail": "Erros normalizados (StandardError) para consumers."
+      }
+    ],
+    "responsibilities": [
+      "Expor métodos semânticos e tipados para APIs (evitar HttpClient direto em UI).",
+      "Delegar autenticação, correlação e erro para http-base/interceptors.",
+      "Manter contratos de request/response claros (DTOs).",
+      "Evitar lógica de negócio (somente acesso a dados).",
+      "Facilitar mocking e testes (clients isolados)."
+    ],
+    "nonResponsibilities": [
+      "Não gerenciar estado/cache de domínio (isso é data-access-*).",
+      "Não decidir autorização (isso é access-decision/guards).",
+      "Não renderizar UI.",
+      "Não implementar regras complexas de retry/cache/offline.",
+      "Não conhecer contexto de navegação/UX."
+    ],
+    "dependencies": [
+      {
+        "name": "http-base",
+        "why": "Pipeline HTTP padronizado (correlação, headers, erro)."
+      },
+      {
+        "name": "error-model",
+        "why": "Normalização de erros para StandardError."
+      },
+      {
+        "name": "runtime-config (recomendado)",
+        "why": "Base URLs e versionamento por ambiente; gap já registrado."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/contracts/api-clients-sdk/src/lib/",
+      "files": [
+        {
+          "path": "clients/",
+          "purpose": "Clients por domínio (ex.: hub.client.ts, tools.client.ts)."
+        },
+        {
+          "path": "models/",
+          "purpose": "DTOs de request/response (tipos compartilhados)."
+        },
+        {
+          "path": "api-clients-sdk.module.ts",
+          "purpose": "Providers e configuração dos clients."
+        },
+        {
+          "path": "api-client.base.ts",
+          "purpose": "Classe base com helpers comuns (get/post/put/delete)."
+        },
+        {
+          "path": "api-clients-sdk.spec.ts",
+          "purpose": "Testes: chamadas tipadas, erro normalizado, integração com interceptors."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir ApiClientBase com helpers genéricos (get/post/etc.) usando HttpClient.",
+      "Criar clients por domínio/serviço com métodos semânticos.",
+      "Definir DTOs claros para requests/responses.",
+      "Integrar com runtime-config para baseUrl/version.",
+      "Garantir que erros propagados sejam StandardError.",
+      "Criar testes mínimos com HttpTestingController."
+    ],
+    "acceptanceCriteria": [
+      "UI/Services não usam HttpClient diretamente.",
+      "Clients expõem métodos tipados e semânticos.",
+      "Erros são sempre StandardError.",
+      "BaseUrl/version são configuráveis por ambiente.",
+      "Testes mínimos cobrem sucesso e erro."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Typed API Clients",
+          "goal": "Criar clients HTTP tipados e reutilizáveis.",
+          "level": "Base",
+          "knowledge": [
+            "DTOs e contratos",
+            "HttpClient + interceptors",
+            "Mocking com HttpTestingController"
+          ]
+        },
+        {
+          "title": "Separation of Concerns (HTTP)",
+          "goal": "Separar transporte, domínio e UI.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Client vs Data Access",
+            "Error normalization",
+            "Config por ambiente"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar api-clients-sdk: base client + clients por domínio com métodos tipados, integração com http-base e error-model, configuração por runtime-config e testes mínimos.",
+      "generationSteps": [
+        "Criar ApiClientBase.",
+        "Criar clients por domínio.",
+        "Definir DTOs.",
+        "Integrar com http-base.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "HTTP"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta clients disponíveis e seus métodos",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient direto em UI",
+        "Erros normalizados"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: chamada via client retorna DTO ou StandardError"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do api-clients-sdk)",
+        "Guia: quando criar novo client vs usar existente"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:contracts",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/api-clients-sdk/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

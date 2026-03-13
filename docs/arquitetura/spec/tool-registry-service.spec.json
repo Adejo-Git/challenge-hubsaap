@@ -1,0 +1,212 @@
+{
+  "ToolRegistryService": {
+    "kind": "frontend",
+    "key": "ToolRegistryService",
+    "title": "ToolRegistryService",
+    "summary": "Facade do Access Layer para catálogo de tools: expõe lista/lookup/resolveRoute e status (enabled/installed) para Shell/Guards/Navigation sem importar diretamente a shared-lib tool-registry.",
+    "function": "Servir como fonte única do Shell para catálogo de tools consumido pelo Shell. Encapsula a shared-lib tool-registry e padroniza: lookup por toolKey, listagem ordenada para menu, resolução de rotas /tools/<toolKey>, e status efetivo (installed/enabled) integrando com FeatureFlagService e ContextService. Mantém API lite e previsível para Router/RouteGuards/Navigation/AccessDecision.",
+    "whenRuns": [
+      "No bootstrap do Hub para montar menu e rota /tools/*.",
+      "Ao navegar para /tools/<toolKey> (validar existência e obter metadados mínimos).",
+      "Ao trocar contexto se o catálogo ou status enabled depender do contexto.",
+      "Quando AccessDecision precisa de metadados da tool (permission map/flags/capabilities)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolRegistry (shared-lib)",
+        "detail": "Catálogo base e validação de manifests."
+      },
+      {
+        "name": "FeatureFlagService",
+        "detail": "Determina enabled/disabled por toolKey e feature flags globais."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Recarrega/filtra catálogo se houver dependência por contexto."
+      },
+      {
+        "name": "RuntimeConfig (opcional)",
+        "detail": "Lista de tools instaladas por ambiente/tenant (se aplicável)."
+      },
+      {
+        "name": "ObservabilityService (opcional)",
+        "detail": "Eventos mínimos: registry.loaded/invalidManifest/resolveRoute."
+      },
+      {
+        "name": "getTool(toolKey)",
+        "detail": "Metadados mínimos (manifest lite) ou null."
+      },
+      {
+        "name": "listTools()",
+        "detail": "Lista ordenada e agrupada para menu (sem importar tool)."
+      },
+      {
+        "name": "resolveRoute(url)",
+        "detail": "Extrai toolKey e valida existência/installed."
+      },
+      {
+        "name": "status(toolKey)",
+        "detail": "installed/enabled/disabledReason (para guards e UI)."
+      },
+      {
+        "name": "explain(toolKey)",
+        "detail": "Motivo de indisponibilidade: missing/disabled/invalid."
+      }
+    ],
+    "responsibilities": [
+      "Ser o ponto único do Shell para catálogo de tools via Access Layer.",
+      "Encapsular tool-registry e expor modelo lite para menu/guards.",
+      "Integrar status enabled com FeatureFlagService (sem confundir com autorização).",
+      "Fornecer resolveRoute para /tools/* com comportamento consistente.",
+      "Falhar cedo em manifest inválido e expor explain para troubleshooting."
+    ],
+    "nonResponsibilities": [
+      "Não carregar/instanciar tools (lazy loading é do Router/ToolRoutes).",
+      "Não decidir permissão final (isso é AccessDecisionService).",
+      "Não manter estado de navegação (isso é NavigationService).",
+      "Não fazer HTTP direto para buscar catálogo (a menos que runtime-config/data-access exista e seja usado pelo shared-lib)."
+    ],
+    "dependencies": [
+      {
+        "name": "tool-registry",
+        "why": "Catálogo base/manifests e validações."
+      },
+      {
+        "name": "FeatureFlagService",
+        "why": "Enabled/disabled por toolKey (gating de tool)."
+      },
+      {
+        "name": "ContextService",
+        "why": "Recarregar/filtrar quando contexto muda."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros: UnknownToolKey, InvalidToolManifest."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Telemetria mínima e troubleshooting."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/registry/",
+      "files": [
+        {
+          "path": "tool-registry.service.ts",
+          "purpose": "Facade: getTool/listTools/resolveRoute/status/explain."
+        },
+        {
+          "path": "tool-registry.model.ts",
+          "purpose": "Tipos lite: ToolManifestLite, ToolStatus, ToolGroupLite."
+        },
+        {
+          "path": "tool-registry.adapters.ts",
+          "purpose": "Adapter entre tool-registry (shared-lib) e modelos lite."
+        },
+        {
+          "path": "tool-registry.status.ts",
+          "purpose": "Cálculo de status: installed/enabled/disabledReason."
+        },
+        {
+          "path": "tool-registry.util.ts",
+          "purpose": "Helpers: parse /tools/<toolKey>, sort/group, safe defaults."
+        },
+        {
+          "path": "tool-registry.spec.ts",
+          "purpose": "Testes: list/resolve/status (enabled/disabled/missing), context change."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir ToolManifestLite com campos mínimos para menu/guards (toolKey, baseRoute, title, icon, group, order).",
+      "Implementar facade delegando ao ToolRegistry (shared-lib) e adaptando para lite.",
+      "Integrar FeatureFlagService para status enabled e disabledReason.",
+      "Conectar ContextService: ao trocar contexto, recalcule status e refaça listTools se necessário.",
+      "Implementar resolveRoute(url) para extrair toolKey e validar existência.",
+      "Criar testes: unknown tool, tool disabled, resolveRoute, context change."
+    ],
+    "acceptanceCriteria": [
+      "Shell/Guards usam ToolRegistryService (Access Layer), não tool-registry diretamente.",
+      "listTools retorna catálogo ordenado/agrupado e inclui status enabled/installed.",
+      "resolveRoute valida toolKey e falha coerente quando desconhecida.",
+      "Troca de contexto recalcula status e notifica consumidores (quando aplicável).",
+      "Sem carregar tool eagerly e sem HTTP direto.",
+      "Testes mínimos cobrem resolve/status/context change."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Registry Facades",
+          "goal": "Desacoplar Shell do catálogo de tools e expor modelo lite.",
+          "level": "Base",
+          "knowledge": [
+            "Modelos lite",
+            "resolveRoute",
+            "status vs permissão"
+          ]
+        },
+        {
+          "title": "Menu + Guards Integration",
+          "goal": "Garantir consistência entre catálogo, flags e rota /tools/*.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Disabled tool behavior",
+            "Context change",
+            "Troubleshooting com explain"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolRegistryService (Access Layer): facade sobre tool-registry, expor getTool/listTools/resolveRoute/status/explain com modelos lite, integrar FeatureFlagService para enabled/disabled e testes mínimos (resolve/status/context change).",
+      "generationSteps": [
+        "Criar model lite e adapters.",
+        "Criar facade e cálculo de status.",
+        "Integrar com flags e contexto.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Access Layer"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "Shell não importa tool-registry diretamente",
+        "Status enabled/installed documentado (não é permissão)",
+        "Gates passando",
+        "Testes de resolve/status/context change"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: menu lista tools + /tools/<key> resolve e tool disabled bloqueia"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ToolRegistryService)",
+        "Guia: contrato mínimo do manifest e como status é calculado"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

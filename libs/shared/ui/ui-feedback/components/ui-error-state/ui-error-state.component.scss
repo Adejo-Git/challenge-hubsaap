@@ -1,0 +1,18 @@
+/* libs/shared/ui/ui-feedback/components/ui-error-state/ui-error-state.component.scss */
+
+.ui-error {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+}
+
+.ui-error__correlation {
+  display: block;
+  margin-top: var(--spacing-sm);
+  opacity: 0.7;
+}
+
+.ui-error__actions {
+  margin-top: var(--spacing-md);
+}

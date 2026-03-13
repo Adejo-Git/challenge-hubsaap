@@ -1,0 +1,33 @@
+{
+  "name": "access-decision",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "root": "libs/access/access-decision",
+  "sourceRoot": "libs/access/access-decision/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/access/access-decision",
+        "main": "libs/access/access-decision/src/index.ts",
+        "tsConfig": "libs/access/access-decision/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/access/access-decision/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/access/access-decision/src --ext .ts"
+      }
+    }
+  },
+  "tags": ["type:access", "scope:shared"]
+}

@@ -1,0 +1,198 @@
+{
+  "ToolRootComponent": {
+    "kind": "frontend",
+    "key": "ToolRootComponent",
+    "title": "ToolRootComponent",
+    "summary": "Componente raiz padronizado da Tool: recebe o contexto do Hub via adapter, inicializa a tool e hospeda o router-outlet interno.",
+    "function": "Atuar como container principal da tool dentro do Hub. Faz o wiring do contexto do Hub (via ToolContextAdapter), inicializa estado mínimo da tool (sem IO direto) e renderiza as rotas internas (children) em um router-outlet. Serve como ponto único de integração Tool↔Hub para eventos e lifecycle.",
+    "whenRuns": [
+      "Após o lazy load do ToolModule quando a rota /tools/<toolKey> é ativada.",
+      "Ao mudar contexto do Hub enquanto a tool está aberta (atualiza adapter e revalida estado interno).",
+      "Ao navegar entre rotas internas da tool (mantém container estável)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolContextAdapter",
+        "detail": "Adapter que traduz Session/Context/Flags/Decision do Hub para o modelo de contexto interno da tool."
+      },
+      {
+        "name": "ToolEvents",
+        "detail": "Canal para emitir eventos de lifecycle (loaded/ready/error) e eventos de telemetria."
+      },
+      {
+        "name": "ActivatedRoute / Router",
+        "detail": "Rotas internas (children) e parâmetros de navegação da tool."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "detail": "Flags internas da tool para habilitar sub-módulos/rotas internas."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "RouterOutlet interno",
+        "detail": "Renderiza as páginas internas da tool via children routes."
+      },
+      {
+        "name": "Eventos de lifecycle",
+        "detail": "Emite tool.loaded/tool.ready/tool.error via ToolEvents."
+      },
+      {
+        "name": "Estado de contexto da tool",
+        "detail": "Contexto adaptado disponível para componentes internos (via provider/injection)."
+      }
+    ],
+    "responsibilities": [
+      "Inicializar a tool com contexto adaptado do Hub (sem duplicar lógica do Access Layer).",
+      "Hospedar o router-outlet interno e garantir layout mínimo consistente dentro do Hub.",
+      "Emitir eventos de lifecycle e erros padronizados via ToolEvents.",
+      "Reagir a mudanças de contexto do Hub atualizando o contexto interno (adapter).",
+      "Evitar IO direto: qualquer acesso a dados deve ocorrer via Tool Data-Access SDK (quando necessário)."
+    ],
+    "nonResponsibilities": [
+      "Não definir menu do Hub (isso é ToolMenuMetadata publicado no contrato).",
+      "Não decidir acesso/permissão (isso é RouteGuards/AccessDecision do Hub).",
+      "Não implementar data-access direto (sem HttpClient).",
+      "Não concentrar lógica de páginas internas — apenas container e wiring.",
+      "Não manter estado global do Hub (apenas contexto adaptado da tool)."
+    ],
+    "dependencies": [
+      {
+        "name": "ToolModule",
+        "why": "ToolRoot é parte do entrypoint e deve ser renderizado como container principal."
+      },
+      {
+        "name": "Tool Routes",
+        "why": "ToolRoot hospeda o router-outlet para as rotas internas."
+      },
+      {
+        "name": "ToolContextAdapter (emerald)",
+        "why": "Traduz contexto do Hub para o modelo interno da tool sem acoplamento."
+      },
+      {
+        "name": "ToolEvents (slate)",
+        "why": "Publica lifecycle/telemetria/erros padronizados tool↔hub."
+      },
+      {
+        "name": "Tool Data-Access SDK (slate)",
+        "why": "Quando a tool precisar de IO, o container deve orientar uso do SDK, não HttpClient direto."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/tools/<toolKey>/src/app/tool-root/",
+      "files": [
+        {
+          "path": "tool-root.component.ts",
+          "purpose": "Container: wiring do ToolContextAdapter e emissão de lifecycle via ToolEvents."
+        },
+        {
+          "path": "tool-root.component.html",
+          "purpose": "Template mínimo: header opcional + router-outlet interno + estados (loading/erro)."
+        },
+        {
+          "path": "tool-root.component.scss",
+          "purpose": "Ajustes mínimos (tokens/tema) para encaixe no Hub."
+        },
+        {
+          "path": "tool-root.component.spec.ts",
+          "purpose": "Testes: cria, injeta adapter, reage a context change, emite eventos de lifecycle."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar ToolRootComponent como container principal da tool (um por tool).",
+      "Injetar ToolContextAdapter e expor contexto adaptado para a árvore interna (provider/signal/observable).",
+      "Ao iniciar, emitir ToolEvents.loaded e, quando pronto, ToolEvents.ready.",
+      "Renderizar router-outlet interno para children routes.",
+      "Implementar estados mínimos: loading inicial e erro padronizado (sem telas quebradas).",
+      "Ao detectar mudança de contexto do Hub, atualizar adapter e emitir ToolEvents.contextChanged (se existir).",
+      "Criar testes mínimos cobrindo criação, emissão de eventos e reação a mudança de contexto."
+    ],
+    "acceptanceCriteria": [
+      "ToolRootComponent renderiza e hospeda as rotas internas via router-outlet.",
+      "Contexto do Hub é adaptado e disponibilizado para a tool via ToolContextAdapter.",
+      "Eventos de lifecycle são emitidos via ToolEvents.",
+      "Mudança de contexto atualiza estado interno sem refresh.",
+      "Sem HttpClient direto no componente.",
+      "Testes mínimos cobrindo lifecycle + context change."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Tool Container & Lifecycle",
+          "goal": "Construir o container raiz da tool com lifecycle e wiring de contexto.",
+          "level": "Base",
+          "knowledge": [
+            "RouterOutlet e children routes",
+            "Providers e estado reativo (signals/observables)",
+            "Estados de UI (loading/erro) no container"
+          ]
+        },
+        {
+          "title": "Tool↔Hub Integration",
+          "goal": "Integrar tool ao Hub via adapter e eventos sem acoplamento.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Padrão ToolContextAdapter",
+            "Eventos/lifecycle tool↔hub",
+            "Reação a context change e invalidação"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolRootComponent do Hub: container com router-outlet interno, wiring do ToolContextAdapter, emissão de lifecycle via ToolEvents (loaded/ready/error), estados loading/erro, reação a mudança de contexto. Sem HttpClient direto. Entregar TS/HTML/SCSS + testes.",
+      "generationSteps": [
+        "Gerar boilerplate do componente.",
+        "Integrar ToolContextAdapter e expor contexto para a árvore interna.",
+        "Implementar lifecycle via ToolEvents.",
+        "Implementar template mínimo com router-outlet e estados.",
+        "Criar testes mínimos (lifecycle + context change)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Tool Contract"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR define claramente o container e lifecycle da tool",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient no container",
+        "Eventos de lifecycle padronizados emitidos",
+        "Reação a mudança de contexto validada"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro: tool carrega, navega internamente, reage a mudança de contexto",
+        "Print/gif opcional ou notas de validação"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ToolRootComponent)",
+        "Guia: lifecycle padrão de tools (loaded/ready/error/contextChanged)",
+        "Playbook: troubleshooting de tool não carrega / erro no container"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:tools"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/tools/jest.config.ts"
+      }
+    }
+  }
+}

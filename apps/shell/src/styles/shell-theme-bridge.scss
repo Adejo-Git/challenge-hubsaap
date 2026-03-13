@@ -1,0 +1,63 @@
+/* Shell Theme Bridge
+   Maps legacy --hub-* CSS variables used by the Shell to the canonical tokens
+   exposed by @hub/shared/ui-tokens / ui-theme (e.g. --color-*, --spacing-*, --radius-*, --shadow-*)
+
+   Rules:
+   - This file should only create aliases; it must not hardcode colors.
+   - The ui-theme service is expected to apply the canonical --color-* variables at runtime.
+   - Keep this file as the single compatibility layer for the Shell.
+*/
+
+:root {
+  /* Surfaces */
+  --hub-background: var(--color-surface-subtle, #f8fafc);
+  --hub-content-bg: var(--color-surface-subtle, #f8fafc);
+  --hub-panel-bg: var(--color-surface-base, #ffffff);
+  --hub-sidebar-bg: var(--color-surface-base, #ffffff);
+  --hub-topbar-bg: var(--color-surface-base, #ffffff);
+
+  /* Text */
+  --hub-text-primary: var(--color-text-primary, #00233E);
+  --hub-text-secondary: var(--color-text-secondary, #4D4D4D);
+
+  /* Borders and strokes */
+  --hub-border: var(--color-border-default, #CCCCCC);
+
+  /* Brand / actions */
+  --hub-primary: var(--color-brand-primary, #00233E);
+  --hub-primary-dark: var(--color-brand-primaryHover, #003C69);
+
+  /* Interaction surfaces */
+  --hub-hover-bg: var(--color-surface-hover, rgba(234,244,255,0.6));
+  --hub-active-bg: var(--color-surface-hover, rgba(234,244,255,0.6));
+
+  /* Notifications / panels */
+  --hub-notification-bg: var(--color-surface-elevated, #f1f5f9);
+  --hub-error: var(--color-status-error, #DC3545);
+
+  /* Shadows / radius */
+  --hub-shadow-sm: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+  --hub-shadow-md: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.12));
+  --hub-radius-sm: var(--radius-sm, 4px);
+  --hub-radius-md: var(--radius-md, 6px);
+
+  /* Spacing (examples) */
+  --hub-spacing-xs: var(--spacing-xs, 4px);
+  --hub-spacing-sm: var(--spacing-sm, 6px);
+  --hub-spacing-md: var(--spacing-md, 8px);
+}
+
+/* Additional adaptors: small utilities used by Shell components */
+
+.topbar {
+  background: var(--hub-topbar-bg);
+}
+
+.sidebar {
+  background: var(--hub-sidebar-bg);
+}
+
+.right-panel {
+  background: var(--hub-panel-bg);
+}
+

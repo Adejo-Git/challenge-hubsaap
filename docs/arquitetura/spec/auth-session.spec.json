@@ -1,0 +1,218 @@
+{
+  "AuthSession": {
+    "kind": "frontend",
+    "key": "AuthSession",
+    "title": "AuthSession",
+    "summary": "Shared-lib dona do estado de autenticação do Hub: restaura sessão, mantém snapshot reativo (user/claims/exp), fornece token de forma segura e APIs de login/logout/refresh para consumo por guards, interceptors e Access Layer.",
+    "function": "Centralizar a gestão da sessão do usuário no frontend: carregar/restaurar sessão do storage seguro, manter estado reativo (authenticated/user/claims/exp), disponibilizar token (ou credencial) para camadas consumidoras (auth-interceptor, guards e Access Layer), coordenar refresh quando aplicável e emitir eventos de lifecycle (login/logout/expired). Não controla navegação (isso é do AuthGuard do Shell).",
+    "whenRuns": [
+      "No bootstrap do AppShell/AuthGuard (restore inicial).",
+      "Quando o usuário autentica e o callback atualiza estado.",
+      "Quando o token expira e um refresh é necessário (via interceptor).",
+      "Quando ocorre logout (manual ou expiração/invalidade)."
+    ],
+    "inputs": [
+      {
+        "name": "StorageService",
+        "detail": "Persistência segura (tokens/artefatos de sessão) com namespace e TTL."
+      },
+      {
+        "name": "RuntimeConfig",
+        "detail": "Parâmetros do IdP/OIDC (endpoints, clientId, strategy) e flags de refresh."
+      },
+      {
+        "name": "Clock/TimeProvider",
+        "detail": "Fonte para cálculo de expiração (facilita testes)."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Eventos mínimos: session.restore, session.expired, session.logout (sem dados sensíveis)."
+      },
+      {
+        "name": "session$",
+        "detail": "Stream reativo do estado de sessão (authenticated, user, claims, exp, status)."
+      },
+      {
+        "name": "snapshot()",
+        "detail": "Snapshot síncrono do estado atual para consumidores (quando necessário)."
+      },
+      {
+        "name": "getAccessToken()",
+        "detail": "Retorna token/credencial atual (ou null) sem expor internals."
+      },
+      {
+        "name": "restore()",
+        "detail": "Restaura sessão do storage e valida expiração básica."
+      },
+      {
+        "name": "refresh()",
+        "detail": "Tenta renovar credenciais (quando estratégia permitir)."
+      },
+      {
+        "name": "clear()/logout()",
+        "detail": "Limpa sessão e emite evento de logout."
+      }
+    ],
+    "responsibilities": [
+      "Ser a única fonte de verdade do estado de autenticação no frontend.",
+      "Restaurar sessão do storage com validação de expiração e consistência.",
+      "Expor estado reativo e snapshot seguro para consumidores (guards/interceptor/access-layer).",
+      "Disponibilizar token de forma encapsulada (evitar espalhar storage/token parsing).",
+      "Coordenar refresh quando aplicável (chamada interna por strategy; não é o interceptor).",
+      "Emitir eventos mínimos de lifecycle para observabilidade sem vazamento de dados sensíveis.",
+      "Garantir que múltiplos pedidos de refresh concorrentes sejam coalescidos (single-flight)."
+    ],
+    "nonResponsibilities": [
+      "Não controlar navegação/redirect de rotas (isso é AuthGuard do Shell).",
+      "Não anexar header Authorization em requests (isso é auth-interceptor).",
+      "Não implementar regras RBAC/ABAC/policies (isso é permission-rbac/policy-engine/access-decision).",
+      "Não fazer HttpClient direto se a estratégia de auth for “externalized” (ex.: OIDC lib); apenas coordenar.",
+      "Não logar tokens/claims completas (nunca)."
+    ],
+    "dependencies": [
+      {
+        "name": "storage-secure (recomendado)",
+        "why": "Persistência segura e namespaced da sessão (gap já indicado no seu mapa)."
+      },
+      {
+        "name": "runtime-config (recomendado)",
+        "why": "Carregar config do IdP/estratégia de auth (gap já indicado)."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados: SessionExpired, RefreshFailed, InvalidSession."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Telemetria mínima (sem dados sensíveis) e correlação."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/auth-session/src/lib/",
+      "files": [
+        {
+          "path": "auth-session.service.ts",
+          "purpose": "Fonte única da sessão: restore/snapshot/token/refresh/logout + session$."
+        },
+        {
+          "path": "auth-session.model.ts",
+          "purpose": "Tipos: SessionState, SessionStatus, ClaimsLite, UserProfileLite."
+        },
+        {
+          "path": "auth-session.storage.ts",
+          "purpose": "Adapter para persistência (keys, namespace, ttl) via storage-secure."
+        },
+        {
+          "path": "auth-session.strategy.ts",
+          "purpose": "Interface de strategy (oidc/external/no-refresh) e single-flight refresh."
+        },
+        {
+          "path": "auth-session.errors.ts",
+          "purpose": "Erros padronizados (mapeados para error-model)."
+        },
+        {
+          "path": "auth-session.util.ts",
+          "purpose": "Helpers: expiração, clock, safe decode (se necessário)."
+        },
+        {
+          "path": "auth-session.spec.ts",
+          "purpose": "Testes: restore ok/fail, expiry, refresh single-flight, logout clears."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir SessionState mínimo (authenticated/status/userLite/claimsLite/exp) e evitar armazenar excessos.",
+      "Implementar restore(): ler do storage-secure, validar expiração e publicar session$.",
+      "Implementar getAccessToken(): retornar token atual de forma encapsulada.",
+      "Implementar refresh() com single-flight: múltiplas chamadas aguardam a mesma promise/observable.",
+      "Implementar clear()/logout(): limpar storage, resetar estado e emitir evento.",
+      "Mapear falhas para error-model (RefreshFailed/SessionExpired) sem detalhes sensíveis.",
+      "Criar testes mínimos cobrindo restore/refresh/logout e concorrência."
+    ],
+    "acceptanceCriteria": [
+      "Existe uma única fonte do estado auth (session$ + snapshot).",
+      "restore() recupera sessão de forma segura e detecta expiração.",
+      "refresh() é single-flight e não dispara múltiplos refresh concorrentes.",
+      "logout/clear limpam storage e estado corretamente.",
+      "Nenhum log/telemetria contém token ou claims completas.",
+      "Testes mínimos cobrem restore/expiry/refresh/logout."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Frontend Session Management",
+          "goal": "Implementar estado de sessão reativo e seguro, com restore/refresh.",
+          "level": "Intermediário",
+          "knowledge": [
+            "State reativo (RxJS/signals)",
+            "Persistência segura e TTL",
+            "Single-flight refresh e concorrência"
+          ]
+        },
+        {
+          "title": "Security Hygiene (Frontend)",
+          "goal": "Evitar vazamento de credenciais e padronizar erros.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Nunca logar tokens",
+            "Modelos de erro padronizados",
+            "Separação Guard vs Session vs Interceptor"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar auth-session: service como fonte única do estado auth (session$, snapshot), restore via storage seguro, getAccessToken encapsulado, refresh single-flight (opcional), logout/clear, eventos mínimos para observabilidade e testes cobrindo restore/expiry/refresh/logout.",
+      "generationSteps": [
+        "Criar models e erros padronizados.",
+        "Criar adapter de storage e service principal.",
+        "Implementar single-flight refresh.",
+        "Criar testes mínimos (restore/expiry/refresh/logout).",
+        "Gerar checklist e evidências mínimas."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Security-first",
+        "Guided Build"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta contrato de SessionState e APIs públicas",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem logs sensíveis (tokens/claims completas)",
+        "Refresh single-flight validado (se aplicável)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Teste manual: restore ok, restore expirado, logout",
+        "Notas: estratégia de refresh (habilitado/desabilitado)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do auth-session)",
+        "Guia: lifecycle de sessão (restore/refresh/logout) e consumo por guard/interceptor"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/auth-session/jest.config.ts"
+      }
+    }
+  }
+}

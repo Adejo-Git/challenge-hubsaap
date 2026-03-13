@@ -1,0 +1,186 @@
+{
+  "ToolMenuMetadata": {
+    "kind": "frontend",
+    "key": "ToolMenuMetadata",
+    "title": "ToolMenuMetadata",
+    "summary": "Metadados de menu da Tool publicados no contrato: permitem ao Hub montar navegação (menu/atalhos) sem depender de implementações internas.",
+    "function": "Declarar o “cartão de identidade” da tool para o Hub: nome, label, ícone, ordem, agrupamento e deep links principais. Esse metadata é usado pelo Hub para compor o menu e navegação segura (junto do Access Layer), evitando que o Shell precise conhecer rotas internas detalhadas. É exportado pelo ToolModule como parte do contrato.",
+    "whenRuns": [
+      "Quando o Hub constrói a árvore de navegação (NavigationService) para renderizar o menu.",
+      "Quando o contexto muda e o Hub recalcula visibilidade/ordem/agrupamento de ferramentas.",
+      "Quando o usuário usa atalhos/deep links a partir do menu."
+    ],
+    "inputs": [
+      {
+        "name": "ToolKey",
+        "detail": "Identificador único da tool (ex.: \"pip\", \"lbc\") usado para rotas /tools/<toolKey>."
+      },
+      {
+        "name": "Label/Title",
+        "detail": "Nome legível no menu e cabeçalhos (ex.: “PIP”)."
+      },
+      {
+        "name": "Icon",
+        "detail": "Ícone (nome/enum) conforme padrão visual do Hub."
+      },
+      {
+        "name": "Order/Group",
+        "detail": "Ordem e agrupamento para organizar o menu (ex.: “Tools”, “Catálogos”)."
+      },
+      {
+        "name": "DeepLinks",
+        "detail": "Links principais para páginas internas (ex.: overview, evidences, reports) — sempre relativos à tool."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Menu nodes",
+        "detail": "Nós de menu e atalhos consumidos pelo Hub (após filtrar por decisão de acesso)."
+      },
+      {
+        "name": "Tool identity",
+        "detail": "Metadado versionável e determinístico para catálogo e auditoria."
+      }
+    ],
+    "responsibilities": [
+      "Publicar metadata mínimo e suficiente para navegação do Hub sem acoplamento.",
+      "Garantir que toolKey e deep links sejam consistentes com ToolRoutes.",
+      "Permitir agrupamento/ordenação previsível no menu.",
+      "Manter o formato do metadata estável para versionamento do contrato.",
+      "Evitar excesso: deep links devem ser “principais”, não replicar toda a árvore interna."
+    ],
+    "nonResponsibilities": [
+      "Não decidir visibilidade final (Hub filtra por AccessDecision/flags/permissões).",
+      "Não carregar dados nem chamar APIs.",
+      "Não implementar UI do menu (isso é Navigation/UI do Hub).",
+      "Não expor rotas internas completas como “menu do Hub” (somente deep links essenciais).",
+      "Não conter regras de negócio da tool."
+    ],
+    "dependencies": [
+      {
+        "name": "ToolModule",
+        "why": "ToolMenuMetadata é exportado como parte do contrato do plugin."
+      },
+      {
+        "name": "ToolRoutes",
+        "why": "Deep links devem apontar para paths reais definidos nas rotas internas."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "why": "Alguns deep links podem depender de feature flags (declarativo)."
+      },
+      {
+        "name": "ToolPermissionMap",
+        "why": "Deep links/capacidades devem mapear permissões quando aplicável."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/tools/<toolKey>/src/app/tool-module/",
+      "files": [
+        {
+          "path": "tool.menu-metadata.ts",
+          "purpose": "Declara e exporta ToolMenuMetadata (label/icon/order/group/deepLinks)."
+        },
+        {
+          "path": "tool.menu-metadata.model.ts",
+          "purpose": "Tipagem do metadata (ToolMenuMetadata, DeepLink, ToolGroup)."
+        },
+        {
+          "path": "tool.menu-metadata.spec.ts",
+          "purpose": "Testes: consistência de toolKey e deepLinks (paths existentes)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir interface/typing do ToolMenuMetadata (toolKey, label, icon, group, order, deepLinks).",
+      "Criar `export const TOOL_MENU_METADATA: ToolMenuMetadata = {...}` por tool.",
+      "Garantir que cada deepLink tenha `path` relativo consistente com ToolRoutes (sem /tools/...).",
+      "Limitar deepLinks aos principais destinos (overview, evidences, reports, etc.).",
+      "Opcional: indicar `featureKey`/`permissionKey` no deepLink de forma declarativa (para o Hub filtrar).",
+      "Criar teste mínimo: toolKey definido; deepLinks não vazios; paths não inválidos/duplicados."
+    ],
+    "acceptanceCriteria": [
+      "Hub consegue montar menu e atalhos da tool usando apenas ToolMenuMetadata + decisão de acesso.",
+      "Deep links apontam para rotas internas existentes (consistentes com ToolRoutes).",
+      "Formato é estável e versionável (contrato).",
+      "Não contém regras de visibilidade final (apenas declara metadados).",
+      "Testes mínimos validando consistência."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Contract-First Navigation Metadata",
+          "goal": "Publicar metadata de navegação sem acoplar Shell às rotas internas.",
+          "level": "Base",
+          "knowledge": [
+            "Design de contrato (interfaces estáveis)",
+            "Deep links e consistência com rotas",
+            "Agrupamento/ordenação de menu"
+          ]
+        },
+        {
+          "title": "Versionamento de Contratos",
+          "goal": "Evoluir metadata com compatibilidade para o Hub.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Campos opcionais e backward compatibility",
+            "Testes de consistência do contrato",
+            "Evitar “menu gigante” (over-engineering)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolMenuMetadata para uma tool do Hub: toolKey, label, icon, group, order, deepLinks principais (paths relativos), opcional featureKey/permissionKey declarativos. Garantir consistência com ToolRoutes e incluir teste mínimo.",
+      "generationSteps": [
+        "Gerar model/interface do metadata.",
+        "Criar constante exportada TOOL_MENU_METADATA.",
+        "Validar paths relativos e consistência com ToolRoutes.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Contract"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR descreve toolKey, group e deepLinks principais",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Deep links consistentes com ToolRoutes",
+        "Sem excesso de links (apenas principais)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro: menu do Hub mostra a tool e deep links navegam corretamente",
+        "Notas de decisão (quais deep links entram no contrato e por quê)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ToolMenuMetadata)",
+        "Guia: padrão de deepLinks no Hub",
+        "Exemplo versionado (como adicionar deepLink novo sem quebrar o Hub)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:tools"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/tools/jest.config.ts"
+      }
+    }
+  }
+}

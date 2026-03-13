@@ -1,0 +1,200 @@
+{
+  "NotificationService": {
+    "kind": "frontend",
+    "key": "NotificationService",
+    "title": "NotificationService",
+    "summary": "Fonte agregada e reativa de notificações do Hub (toast + inbox/center), desacoplada de UI e Tools.",
+    "function": "Serviço de plataforma (shared/access) que centraliza a entrada, normalização, deduplicação, persistência leve (opcional) e distribuição reativa de notificações. Exposto ao AppShell e ao NotificationCenter como um feed único, sem permitir que Tools dependam do Shell. Suporta eventos do Hub (sistema), eventos de Tools (via contratos), e notificações locais (UX).",
+    "whenRuns": [
+      "Durante o bootstrap do Shell para iniciar o feed e restaurar estado (se houver persistência).",
+      "Quando ocorrerem eventos relevantes do Hub (erros globais, sessão expirando, acesso negado).",
+      "Quando Tools publicarem eventos de notificação via ToolEvents/contratos.",
+      "Quando o usuário interagir (marcar como lida, arquivar, abrir detalhes, limpar)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolEvents",
+        "detail": "Canal/event-bus contratual para que Tools publiquem notificações sem depender do Shell."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Registro mínimo de eventos/erros relacionados a notificações (sem vazar PII)."
+      },
+      {
+        "name": "RuntimeConfig/FeatureFlags",
+        "detail": "Habilitar/desabilitar categorias, persistência e limites de retenção."
+      },
+      {
+        "name": "ErrorModel (shared)",
+        "detail": "Padronização de payload de erro convertido em notificação user-friendly."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "NotificationsFeed$",
+        "detail": "Stream reativo (lista/contador/estado) consumido por NotificationCenter e Topbar badges."
+      },
+      {
+        "name": "UnreadCount$",
+        "detail": "Contador reativo para badge e acessibilidade."
+      },
+      {
+        "name": "NotificationActions API",
+        "detail": "Métodos: push(), markRead(), dismiss(), clearAll(), open(ref), groupBy()."
+      }
+    ],
+    "responsibilities": [
+      "Consolidar notificações do Hub e de Tools em um feed único e previsível.",
+      "Normalizar payloads (nível, categoria, origem, timestamp, dedupeKey, correlationId).",
+      "Deduplicar e aplicar políticas de retenção/limite (ex.: máximo N itens).",
+      "Fornecer API explícita de ações (markRead/dismiss/clear/open) sem depender de UI.",
+      "Garantir que Tools publiquem via contrato (ToolEvents) e não via import direto do Shell.",
+      "Aplicar segurança: não registrar PII sensível; suportar redaction no payload."
+    ],
+    "dependencies": [
+      {
+        "name": "Shared-Libs",
+        "why": "ErrorModel, utils de data/time/ids, storage (opcional), runtime-config/feature-flags."
+      },
+      {
+        "name": "ObservabilityService",
+        "why": "Telemetria mínima e correlação de falhas (não UI)."
+      },
+      {
+        "name": "ToolEvents",
+        "why": "Entrada de notificações originadas por tools via contrato."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/ui/notifications/src/lib/notification-service/",
+      "files": [
+        {
+          "path": "notification.service.ts",
+          "purpose": "API e streams (feed/unread) + normalização/dedupe."
+        },
+        {
+          "path": "notification.model.ts",
+          "purpose": "Tipos: NotificationItem, NotificationLevel, NotificationSource, Action."
+        },
+        {
+          "path": "notification.storage.ts",
+          "purpose": "Persistência opcional (local/session storage) com limites e versionamento."
+        },
+        {
+          "path": "notification.mapper.ts",
+          "purpose": "Mapeadores: ErrorModel → NotificationItem; ToolEvent → NotificationItem."
+        },
+        {
+          "path": "notification.service.spec.ts",
+          "purpose": "Testes: dedupe, retenção, markRead/dismiss, merge de fontes."
+        },
+        {
+          "path": "index.ts",
+          "purpose": "Barrel exports (API pública) conforme boundary."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir o modelo NotificationItem com campos mínimos: id, level, title, message, source, timestamp, read, dedupeKey, correlationId.",
+      "Criar NotificationsFeed$ como BehaviorSubject/Signal store (conforme padrão do Hub) e UnreadCount$ derivado.",
+      "Implementar dedupe por dedupeKey + janela de tempo (configurável).",
+      "Consumir ToolEvents e mapear eventos relevantes para NotificationItem (sem acoplar ao domínio da Tool).",
+      "Mapear ErrorModel para NotificationItem com mensagens amigáveis e seguras.",
+      "Adicionar persistência opcional (feature flag) com versionamento e limite de itens.",
+      "Expor API pública: push(), dismiss(id), markRead(id), clearAll(), markAllRead(), open(ref).",
+      "Instrumentar eventos principais no ObservabilityService (sem payload sensível)."
+    ],
+    "acceptanceCriteria": [
+      "AppShell/NotificationCenter consegue consumir um feed único e reativo.",
+      "Tools publicam notificações via ToolEvents/contrato (sem import do Shell).",
+      "Dedupe e retenção funcionam e são testados.",
+      "Sem vazamento de PII em logs/telemetria.",
+      "API de ações é explícita e testada (markRead/dismiss/clearAll)."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Reactive State for Platform Services",
+          "goal": "Modelar um serviço reativo de plataforma com API estável e testável.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Streams/Signals e derivação de estado (feed/unread)",
+            "Dedupe, retenção e modelagem de payload",
+            "Testes determinísticos para estado reativo"
+          ]
+        },
+        {
+          "title": "Contracts Tool → Hub",
+          "goal": "Evitar acoplamento Tool↔Shell usando eventos/contratos.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Contrato de eventos (ToolEvents) e mapping",
+            "Nx boundaries: scope:tool vs scope:shell",
+            "Separação UI vs access/shared"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar NotificationService (shared/access) com feed reativo, dedupe/retenção, API de ações e integração via ToolEvents + ErrorModel, com testes mínimos.",
+      "generationSteps": [
+        "Gerar modelos e API pública (NotificationItem + Actions).",
+        "Gerar store/streams (feed/unread) e lógica de dedupe/retenção.",
+        "Gerar mappers (ToolEvents/ErrorModel → NotificationItem).",
+        "Gerar testes mínimos de comportamento.",
+        "Gerar checklist de PR e evidências mínimas."
+      ],
+      "tags": [
+        "Contract-first",
+        "No UI logic",
+        "Nx-safe",
+        "Guided Build"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "API pública documentada (types + métodos) e estável",
+        "Testes cobrindo dedupe/retenção e ações principais",
+        "Sem dependência de Shell/Tool UI",
+        "Boundaries passando (lint Nx enforce-module-boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Print/registro do gate pass",
+        "Roteiro de teste (fluxo: tool event → feed → markRead)",
+        "Notas de decisão (persistência on/off via feature flag)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Catálogo: como publicar notificações (ToolEvents) + como consumir (NotificationCenter)",
+        "Playbook: níveis/categorias e boas práticas (PII/redaction)",
+        "Exemplos de payload (tool event + error model)"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não renderizar UI (sem templates/components).",
+      "Não tomar decisão de permissão/policy (não usa PolicyEngine para decidir o que “pode notificar”).",
+      "Não depender do Shell nem de Tool UI (evitar imports cruzados).",
+      "Não conter lógica de domínio de ferramentas (apenas mapeia eventos contratuais)."
+    ],
+    "nx": {
+      "tags": [
+        "type:ui",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/notifications/jest.config.ts"
+      }
+    }
+  }
+}

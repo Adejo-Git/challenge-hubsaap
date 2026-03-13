@@ -1,0 +1,63 @@
+// src\app\lib\ui-components\badge\badge.styles.scss
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-family: var(--font-family-base);
+  font-weight: 500;
+  white-space: nowrap;
+
+  border-radius: var(--radius-pill);
+
+  padding: 0 var(--spacing-sm);
+  height: var(--line-height-sm);
+
+  font-size: var(--font-size-sm);
+}
+
+/* =====================
+   VARIANTS
+===================== */
+
+.ui-badge--default {
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+}
+
+.ui-badge--success {
+  background-color: var(--color-status-success);
+  color: var(--color-text-inverse);
+}
+
+.ui-badge--warning {
+  background-color: var(--color-status-warning);
+  color: var(--color-text-primary);
+}
+
+.ui-badge--error {
+  background-color: var(--color-status-error);
+  color: var(--color-text-inverse);
+}
+
+.ui-badge--info {
+  background-color: var(--color-status-info);
+  color: var(--color-text-inverse);
+}
+
+/* =====================
+   SIZES
+===================== */
+
+.ui-badge--sm {
+  height: var(--line-height-xs);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--spacing-xs);
+}
+
+.ui-badge--md {
+  height: var(--font-size-xl);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--spacing-sm);
+}

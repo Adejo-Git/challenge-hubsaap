@@ -1,0 +1,59 @@
+@startuml
+!include <C4/C4_Component>
+
+title Hub SaaP — Frontend C4 Component Diagram (Macro)
+
+LAYOUT_LEFT_RIGHT()
+
+Container_Boundary(shellBoundary, "Shell App") {
+    Component(shellBootstrap, "Shell Bootstrap", "Componente macro", "Inicializa a aplicação, restaura sessão e prepara a experiência base da plataforma.")
+    Component(layoutComposition, "Layout Composition", "Componente macro", "Mantém topbar, sidebar, slots estruturais e moldura persistente da plataforma.")
+    Component(navigationOrchestration, "Navigation Orchestration", "Componente macro", "Deriva a navegação da plataforma a partir de metadata, contexto e decisões de acesso.")
+    Component(toolActivation, "Tool Route Activation", "Componente macro", "Resolve rotas lazy e ativa Tools hospedadas no Shell.")
+    Component(globalStates, "Global UX States", "Componente macro", "Controla estados globais como loading, erro e ausência de acesso.")
+}
+
+Container_Boundary(accessBoundary, "Access Layer") {
+    Component(sessionContextConsumption, "Session & Context Consumption", "Componente macro", "Consome identidade, sessão e contexto ativo.")
+    Component(accessDecisionConsumption, "Access Decision Consumption", "Componente macro", "Disponibiliza permissões avaliadas, capabilities e feature flags.")
+}
+
+Container_Boundary(toolBoundary, "Tool Applications") {
+    Component(toolPages, "Tool Pages", "Componente macro", "Páginas e rotas funcionais de cada Tool.")
+    Component(toolOrchestration, "Tool Orchestration", "Componente macro", "Facades, features e orquestração funcional do frontend da Tool.")
+    Component(toolDataAccess, "Tool Data Access", "Componente macro", "Integração com APIs da Tool e serviços necessários.")
+}
+
+Container_Boundary(sharedBoundary, "Shared UI / Shared Assets") {
+    Component(sharedUI, "Shared UI Components", "Componente macro", "Componentes reutilizáveis, layout, feedback, ícones e padrões compartilhados.")
+    Component(designFoundation, "Design Foundation", "Componente macro", "Tokens, tema e fundações visuais compartilhadas.")
+}
+
+Container_Boundary(contractsBoundary, "Contracts Layer") {
+    Component(toolContracts, "Tool Contracts", "Componente macro", "Contratos de plugin, metadata e integração entre Shell e Tools.")
+}
+
+Container_Boundary(infraBoundary, "Shared Infra / Data Access") {
+    Component(httpFoundation, "HTTP Foundation", "Componente macro", "Base HTTP, interceptors e helpers técnicos reutilizáveis.")
+    Component(telemetryIntegration, "Telemetry Integration", "Componente macro", "Observabilidade, telemetria e integrações técnicas transversais.")
+}
+
+Rel(shellBootstrap, sessionContextConsumption, "Restaura sessão e contexto")
+Rel(shellBootstrap, globalStates, "Inicializa estados globais")
+Rel(layoutComposition, sharedUI, "Usa componentes e padrões compartilhados")
+Rel(layoutComposition, designFoundation, "Usa tema e tokens")
+Rel(navigationOrchestration, accessDecisionConsumption, "Consome decisões avaliadas")
+Rel(navigationOrchestration, toolContracts, "Lê metadata de navegação")
+Rel(toolActivation, toolContracts, "Resolve integração de Tool")
+Rel(toolActivation, toolPages, "Ativa Tool por rota lazy")
+
+Rel(toolPages, toolOrchestration, "Delegam fluxo funcional")
+Rel(toolOrchestration, toolDataAccess, "Executa integrações")
+Rel(toolOrchestration, accessDecisionConsumption, "Consome permissões e flags")
+Rel(toolPages, sharedUI, "Reutilizam UI compartilhada")
+Rel(toolPages, designFoundation, "Aplicam tema e tokens")
+Rel(toolDataAccess, httpFoundation, "Usa infraestrutura HTTP")
+Rel(toolDataAccess, telemetryIntegration, "Publica telemetria")
+
+SHOW_LEGEND()
+@enduml

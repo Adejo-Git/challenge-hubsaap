@@ -1,0 +1,102 @@
+<section
+  class="wizard-form-shell"
+  [ngClass]="[stepperOrientationClass, stepperPositionClass, layoutOptions.compact ? 'wizard-form-shell--compact' : '']"
+>
+  <header class="wizard-form-shell__stepper" aria-label="Etapas do wizard">
+    <ol
+      class="wizard-form-shell__stepper-list"
+      role="tablist"
+      aria-label="Etapas"
+      [attr.aria-orientation]="layoutOptions.orientation === 'vertical' ? 'vertical' : 'horizontal'"
+    >
+      <li
+        class="wizard-form-shell__step-item"
+        *ngFor="let step of steps; let index = index"
+        [class.wizard-form-shell__step-item--active]="isStepActive(step)"
+        [class.wizard-form-shell__step-item--completed]="isStepCompleted(step)"
+        [class.wizard-form-shell__step-item--disabled]="!isStepClickable(step, index)"
+        role="presentation"
+      >
+        <button
+          type="button"
+          class="wizard-form-shell__step-button"
+          [id]="'wizard-step-tab-' + step.id"
+          [disabled]="!isStepClickable(step, index)"
+          role="tab"
+          [attr.aria-selected]="isStepActive(step)"
+          [attr.aria-disabled]="isStepAriaDisabled(step, index)"
+          [attr.aria-label]="getStepDisabledLabel(step, index) || null"
+          [attr.title]="getStepDisabledLabel(step, index) || null"
+          [attr.aria-controls]="'wizard-step-panel-' + step.id"
+          [attr.aria-current]="isStepActive(step) ? 'step' : null"
+          [attr.tabindex]="getStepTabIndex(step, index)"
+          (click)="onJump(step.id)"
+          (keydown)="onStepKeydown($event, index)"
+        >
+          <span class="wizard-form-shell__step-title">{{ step.title }}</span>
+          <small class="wizard-form-shell__step-summary" *ngIf="!layoutOptions.hideStepSummary && step.summary">
+            {{ step.summary }}
+          </small>
+          <small class="wizard-form-shell__step-optional" *ngIf="step.optional">Opcional</small>
+        </button>
+      </li>
+    </ol>
+  </header>
+
+  <main
+    class="wizard-form-shell__content"
+    [id]="activeStep ? 'wizard-step-panel-' + activeStep.id : null"
+    role="tabpanel"
+    [attr.aria-labelledby]="activeStep ? 'wizard-step-tab-' + activeStep.id : null"
+    [attr.aria-busy]="isBusy"
+  >
+    <div class="wizard-form-shell__error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+    <div class="wizard-form-shell__validation" *ngIf="currentValidation.errors.hasErrors">
+      <p class="wizard-form-shell__validation-title">Existem erros nesta etapa:</p>
+      <ul>
+        <li *ngFor="let message of currentValidation.errors.messages">{{ message }}</li>
+      </ul>
+    </div>
+
+    <ng-container *ngIf="currentTemplate; else noTemplate">
+      <ng-container *ngTemplateOutlet="currentTemplate"></ng-container>
+    </ng-container>
+
+    <ng-template #noTemplate>
+      <p class="wizard-form-shell__empty">Nenhum template encontrado para a etapa atual.</p>
+    </ng-template>
+  </main>
+
+  <footer class="wizard-form-shell__actions">
+    <button type="button" class="wizard-form-shell__btn wizard-form-shell__btn--ghost" (click)="onCancel()" [disabled]="isBusy">
+      Cancelar
+    </button>
+
+    <div class="wizard-form-shell__actions-right">
+      <button type="button" class="wizard-form-shell__btn wizard-form-shell__btn--secondary" (click)="onBack()" [disabled]="!navigationSnapshot.canBack">
+        Voltar
+      </button>
+
+      <button
+        type="button"
+        class="wizard-form-shell__btn wizard-form-shell__btn--primary"
+        *ngIf="navigationSnapshot.canNext"
+        (click)="onNext()"
+        [disabled]="!navigationSnapshot.canNext"
+      >
+        Próximo
+      </button>
+
+      <button
+        type="button"
+        class="wizard-form-shell__btn wizard-form-shell__btn--primary"
+        *ngIf="navigationSnapshot.canFinish"
+        (click)="onFinish()"
+        [disabled]="!navigationSnapshot.canFinish"
+      >
+        Concluir
+      </button>
+    </div>
+  </footer>
+</section>

@@ -1,0 +1,214 @@
+{
+  "PermissionService": {
+    "kind": "frontend",
+    "key": "PermissionService",
+    "title": "PermissionService",
+    "summary": "Facade do Access Layer para permissões: resolve RBAC (roles→perms) e expõe API reativa/snapshot para consumo por AccessDecision e UI sem acoplar diretamente ao permission-rbac.",
+    "function": "Centralizar o consumo de permissões no frontend, encapsulando a shared-lib permission-rbac e padronizando um modelo “lite” de permissões efetivas por sessão/contexto. Fornece helpers para checar permissões (has/canAny/canAll) e streams para reagir a mudanças (login/logout, troca de contexto, atualização de roles/claims). Deve ser consumido por AccessDecisionService e, quando necessário, por UI (ex.: esconder botões) — sempre como “sinal”, nunca como regra final de segurança (a regra final é guard/decision).",
+    "whenRuns": [
+      "No bootstrap após sessão restaurada (carregar perms efetivas).",
+      "Ao trocar contexto (se permissões dependem de contexto).",
+      "Ao mudar sessão/claims (login/logout/refresh).",
+      "Quando AccessDecisionService avalia canEnter/canView/canExecute."
+    ],
+    "inputs": [
+      {
+        "name": "SessionService",
+        "detail": "Claims/roles lite (fonte de roles/grupos) para resolver permissões."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Contexto ativo para escopo (tenant/projeto/ambiente) quando aplicável."
+      },
+      {
+        "name": "permission-rbac (shared-lib)",
+        "detail": "Resolver RBAC (roles→perms) e normalização do catálogo de permissões."
+      },
+      {
+        "name": "RuntimeConfig (opcional)",
+        "detail": "Mapas de roles/perms por ambiente ou overrides locais (se aplicável)."
+      },
+      {
+        "name": "ObservabilityService (opcional)",
+        "detail": "Eventos mínimos: perms.resolved/contextChanged (sem dados sensíveis)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "permissions$()",
+        "detail": "Stream do PermissionSetLite efetivo (por sessão/contexto)."
+      },
+      {
+        "name": "snapshot()",
+        "detail": "Snapshot atual do PermissionSetLite."
+      },
+      {
+        "name": "has(permissionKey)",
+        "detail": "Checagem simples (true/false) determinística."
+      },
+      {
+        "name": "canAny(keys)",
+        "detail": "True se possui ao menos uma permissão."
+      },
+      {
+        "name": "canAll(keys)",
+        "detail": "True se possui todas."
+      },
+      {
+        "name": "explain(permissionKey) (opcional)",
+        "detail": "Origem (role) ou razão de negação, para troubleshooting."
+      }
+    ],
+    "responsibilities": [
+      "Ser o ponto único para resolução/consulta de permissões no frontend.",
+      "Encapsular permission-rbac e expor API estável para AccessDecision/UI.",
+      "Recalcular permissões quando sessão ou contexto mudam.",
+      "Entregar modelo lite (set/map) eficiente para checagens rápidas.",
+      "Evitar confusão: UI pode usar para “hint”, mas decisão final ocorre em guards/decision."
+    ],
+    "nonResponsibilities": [
+      "Não implementar engine de policies (isso é PolicyEngine).",
+      "Não decidir acesso final sozinho (isso é AccessDecisionService + RouteGuards).",
+      "Não fazer HTTP direto para buscar permissões.",
+      "Não armazenar sessão/claims (isso é SessionService).",
+      "Não expor dados sensíveis (claims completas) via explain/logs."
+    ],
+    "dependencies": [
+      {
+        "name": "permission-rbac",
+        "why": "Core RBAC e normalização de catálogo de permissões."
+      },
+      {
+        "name": "SessionService",
+        "why": "Fonte de roles/claims lite para resolução."
+      },
+      {
+        "name": "ContextService",
+        "why": "Escopo/contexto para resolução quando necessário."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros: UnknownPermissionKey, InvalidRoleMap."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Telemetria mínima de resolução e troubleshooting."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/permissions/",
+      "files": [
+        {
+          "path": "permission.service.ts",
+          "purpose": "Facade: permissions$ / snapshot / has / canAny / canAll / explain(opc)."
+        },
+        {
+          "path": "permission.model.ts",
+          "purpose": "Tipos: PermissionKey, PermissionSetLite, ExplainEntry."
+        },
+        {
+          "path": "permission.adapters.ts",
+          "purpose": "Adapter entre permission-rbac e modelo lite."
+        },
+        {
+          "path": "permission.resolver.ts",
+          "purpose": "Orquestra recompute por sessão/contexto (sem lógica RBAC interna)."
+        },
+        {
+          "path": "permission.spec.ts",
+          "purpose": "Testes: resolve por roles, recompute em context change, helpers has/canAny/canAll."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir PermissionSetLite como Set/Map eficiente para checagens.",
+      "Implementar resolver que observa SessionService e ContextService para recompute.",
+      "Delegar RBAC ao permission-rbac (não duplicar).",
+      "Expor helpers has/canAny/canAll e snapshot consistente.",
+      "Adicionar explain opcional (sem dados sensíveis) apenas para troubleshooting.",
+      "Criar testes mínimos: roles→perms, troca de contexto, helpers."
+    ],
+    "acceptanceCriteria": [
+      "AccessDecisionService consome PermissionService (não permission-rbac direto).",
+      "has/canAny/canAll são determinísticos e rápidos.",
+      "Troca de sessão/contexto recalcula e notifica subscribers.",
+      "Sem HTTP direto e sem duplicar RBAC.",
+      "Testes mínimos cobrem recompute e helpers."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "RBAC Consumption via Facade",
+          "goal": "Consumir RBAC com modelo lite e API estável.",
+          "level": "Base",
+          "knowledge": [
+            "Permission sets",
+            "Snapshot vs stream",
+            "Checagens canAny/canAll"
+          ]
+        },
+        {
+          "title": "Authorization Building Blocks",
+          "goal": "Entender como permissões se conectam a policies e decisões finais.",
+          "level": "Intermediário",
+          "knowledge": [
+            "RBAC vs ABAC",
+            "Gating de UI vs segurança",
+            "Recompute por contexto"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar PermissionService (Access Layer): facade sobre permission-rbac, resolve perms por roles (SessionService) e contexto (ContextService), expõe permissions$+snapshot+has/canAny/canAll (+explain opcional) e testes mínimos (roles→perms, context change, helpers).",
+      "generationSteps": [
+        "Criar models lite.",
+        "Criar resolver observando sessão/contexto.",
+        "Delegar RBAC ao shared-lib.",
+        "Criar helpers e testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Access Layer"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "AccessDecision usa PermissionService, não permission-rbac direto",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HTTP direto e sem duplicar RBAC",
+        "Testes de recompute e helpers incluídos"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: mudança de role/contexto altera has(permissionKey)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (PermissionService)",
+        "Guia: uso de has/canAny/canAll e limitações (UI hint ≠ segurança)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

@@ -1,0 +1,252 @@
+{
+  "NavigationService": {
+    "kind": "frontend",
+    "key": "NavigationService",
+    "title": "NavigationService",
+    "summary": "Facade do Access Layer para navegação segura: constrói e mantém árvore de menu/breadcrumbs a partir do ToolRegistry + AccessDecision, reagindo a sessão/contexto/flags e evitando drift entre menu e rotas.",
+    "function": "Fornecer a navegação do Hub como um asset central e reativo. Constrói a árvore de navegação (menu + breadcrumbs + quick actions) a partir do catálogo de tools (ToolRegistryService) e do resultado de decisões de acesso (AccessDecisionService), aplicando gating por flags e contexto. Garante consistência entre o que aparece no menu e o que as rotas permitem (anti-bypass por UX). Publica APIs reativas para AppShell (sidebar/topbar), RouterToolRoutes (breadcrumbs) e para UI em geral.",
+    "whenRuns": [
+      "No bootstrap do Hub, após sessão/contexto estarem prontos.",
+      "Ao trocar contexto (regerar menu/breadcrumbs e visibilidade).",
+      "Ao mudar sessão/permissões (login/logout/roles) e a árvore deve reagir.",
+      "Ao mudar flags efetivas (FeatureFlagService) e tools/features entram/saem.",
+      "A cada navegação (Router NavigationEnd) para recalcular breadcrumbs e active item."
+    ],
+    "inputs": [
+      {
+        "name": "ToolRegistryService",
+        "detail": "Fonte do catálogo (ToolManifestLite) e status (installed/enabled)."
+      },
+      {
+        "name": "AccessDecisionService",
+        "detail": "Decisão final para canView/canEnter dos itens e rotas."
+      },
+      {
+        "name": "FeatureFlagService (opcional)",
+        "detail": "Usado indiretamente via decisão/registry; pode ajudar em filtros rápidos."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Context change dispara rebuild e invalidação."
+      },
+      {
+        "name": "SessionService",
+        "detail": "Mudanças de sessão podem alterar visibilidade (via PermissionService/Decision)."
+      },
+      {
+        "name": "Angular Router (bridge)",
+        "detail": "Eventos de navegação para breadcrumbs e item ativo."
+      },
+      {
+        "name": "RuntimeConfig (opcional)",
+        "detail": "Ordem/grupos default, itens fixos do Shell, links externos por ambiente."
+      },
+      {
+        "name": "ObservabilityService (opcional)",
+        "detail": "Eventos mínimos: nav.built/nav.changed/nav.denied (sem PII)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "menu$()",
+        "detail": "Stream de NavigationTree (grupos/itens) já filtrado por decisão e status."
+      },
+      {
+        "name": "breadcrumbs$()",
+        "detail": "Stream de Breadcrumb[] para rota atual (inclui tool/page)."
+      },
+      {
+        "name": "activeItem$()",
+        "detail": "Item ativo/selecionado no menu para highlight e contexto."
+      },
+      {
+        "name": "snapshot()",
+        "detail": "Snapshot do menu/breadcrumbs atual (para render sync)."
+      },
+      {
+        "name": "rebuild()",
+        "detail": "Força rebuild (útil em bootstrap/troca de contexto)."
+      },
+      {
+        "name": "resolveNavForUrl(url)",
+        "detail": "Resolve item/breadcrumb a partir de URL (para deep links e guards de UX)."
+      }
+    ],
+    "responsibilities": [
+      "Ser a fonte única da navegação do Hub (menu/breadcrumbs/active item).",
+      "Construir árvore a partir de ToolRegistry + AccessDecision (não “hardcodear” visibilidade no Shell).",
+      "Garantir consistência: menu mostra apenas itens que o RouteGuards permitiria entrar.",
+      "Reagir a mudanças de sessão/contexto/flags/perms (rebuild determinístico).",
+      "Prover breadcrumbs confiáveis e estáveis com base em rotas e metadados de tool.",
+      "Evitar over-engineering: árvore simples (grupos/itens) e regras previsíveis de ordenação."
+    ],
+    "nonResponsibilities": [
+      "Não autorizar acesso (isso é AccessDecisionService + RouteGuards).",
+      "Não definir rotas (isso é RouterToolRoutes); apenas consome metadados/URL.",
+      "Não manter catálogo de tools (isso é ToolRegistryService).",
+      "Não fazer HTTP para buscar menu (menu deriva de catálogo local + decisão).",
+      "Não conter componentes visuais (isso é ui-layout/ui-components)."
+    ],
+    "dependencies": [
+      {
+        "name": "ToolRegistryService",
+        "why": "Fonte do catálogo e status de tool."
+      },
+      {
+        "name": "AccessDecisionService",
+        "why": "Filtra visibilidade e previne drift entre menu e acesso real."
+      },
+      {
+        "name": "ContextService",
+        "why": "Rebuild por troca de contexto."
+      },
+      {
+        "name": "SessionService",
+        "why": "Rebuild quando sessão muda (roles/perms/claims)."
+      },
+      {
+        "name": "error-model",
+        "why": "Normalizar falhas: InvalidNavConfig, UnknownToolKey, ResolveNavFailed."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Telemetria mínima de rebuild e troubleshooting."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/navigation/",
+      "files": [
+        {
+          "path": "navigation.service.ts",
+          "purpose": "Orquestra menu/breadcrumbs/activeItem; rebuild e streams."
+        },
+        {
+          "path": "navigation.model.ts",
+          "purpose": "Tipos: NavGroup, NavItem, NavTree, Breadcrumb, NavMeta."
+        },
+        {
+          "path": "navigation.builder.ts",
+          "purpose": "Constrói árvore base (Shell + Tools) e ordena/agrupa."
+        },
+        {
+          "path": "navigation.filter.ts",
+          "purpose": "Filtra árvore pela decisão (canView/canEnter) e status (enabled/installed)."
+        },
+        {
+          "path": "navigation.breadcrumbs.ts",
+          "purpose": "Resolve breadcrumbs por URL/routeKey/tool metadata."
+        },
+        {
+          "path": "navigation.active.ts",
+          "purpose": "Resolve active item por URL; helpers de matching (/tools/<key>)."
+        },
+        {
+          "path": "navigation.util.ts",
+          "purpose": "Helpers: normalize urls, stable ids, merge config."
+        },
+        {
+          "path": "navigation.spec.ts",
+          "purpose": "Testes: build+filter, context change, breadcrumbs, active item e determinismo."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir modelos NavGroup/NavItem/NavTree e Breadcrumb com ids estáveis.",
+      "Implementar builder: compor itens fixos do Shell + itens de tools do ToolRegistry (ordenar/grupar).",
+      "Implementar filtro: para cada item, aplicar status (installed/enabled) e AccessDecision.canView/canEnter.",
+      "Integrar com ContextService e SessionService: ao mudar, disparar rebuild determinístico (debounce leve se necessário).",
+      "Integrar com Router events (NavigationEnd): recalcular breadcrumbs e active item pela URL.",
+      "Implementar resolveNavForUrl(url) para deep links e troubleshooting.",
+      "Registrar eventos mínimos no ObservabilityService: nav.built/nav.changed e contagem de itens.",
+      "Criar testes: determinismo (mesmo input → mesma árvore), context change rebuild, breadcrumbs para /tools/<key>, active item."
+    ],
+    "acceptanceCriteria": [
+      "AppShell renderiza menu/breadcrumbs consumindo somente NavigationService.",
+      "Menu não exibe itens inacessíveis (consistente com AccessDecision/RouteGuards).",
+      "Troca de contexto reconstrói menu e breadcrumbs sem refresh.",
+      "Breadcrumbs refletem corretamente Shell e /tools/*.",
+      "Sem HttpClient direto e sem dependência de tools carregadas.",
+      "Testes mínimos cobrem build+filter, breadcrumbs e context change."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Secure Navigation Trees",
+          "goal": "Construir menu e breadcrumbs coerentes com decisão de acesso.",
+          "level": "Intermediário",
+          "knowledge": [
+            "NavTree models",
+            "Determinismo",
+            "Filtragem por decisão/status"
+          ]
+        },
+        {
+          "title": "Router Integration",
+          "goal": "Ligar NavigationService ao Router para active item e breadcrumbs confiáveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "NavigationEnd",
+            "URL matching",
+            "Deep links /tools/<key>"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar NavigationService (Access Layer): construir NavTree (Shell+Tools via ToolRegistry), filtrar por AccessDecision/status, expor menu$/breadcrumbs$/activeItem$, rebuild em context/session change e resolver breadcrumbs/active por URL. Incluir testes mínimos (determinismo, context change, /tools/<key>).",
+      "generationSteps": [
+        "Criar models (NavGroup/NavItem/NavTree/Breadcrumb).",
+        "Criar builder (Shell + tools do registry).",
+        "Criar filter (decision + status).",
+        "Criar breadcrumbs + active resolvers por URL.",
+        "Integrar com Router events.",
+        "Criar testes mínimos (determinismo/context/breadcrumbs)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Navigation",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "AppShell consome menu/breadcrumbs via NavigationService בלבד",
+        "Menu consistente com AccessDecision/RouteGuards (sem drift)",
+        "Determinismo testado (mesma entrada → mesma árvore)",
+        "Gates passando (build/lint/tests/boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: troca de contexto altera menu/breadcrumbs sem refresh",
+        "Demo: deep link /tools/<key> gera breadcrumbs e active item corretamente"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (NavigationService)",
+        "Guia: como um item de tool vira menu/breadcrumb (contrato de metadados)",
+        "Playbook: troubleshooting de item faltando (status/flag/decision)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

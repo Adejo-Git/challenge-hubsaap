@@ -1,0 +1,199 @@
+{
+  "FeatureFlags": {
+    "kind": "frontend",
+    "key": "FeatureFlags",
+    "title": "FeatureFlags",
+    "summary": "Asset de flags no frontend: resolve flags efetivas por contexto/ambiente (Hub + Tools) e expõe API reativa para gating e rollout sem acoplamento.",
+    "function": "Centralizar avaliação e distribuição de feature flags no frontend. Resolve o estado efetivo das flags combinando defaults, overrides por ambiente, contexto (tenant/cliente/projeto) e, quando aplicável, regras simples. Exponibiliza API reativa para Hub (menu/rotas) e Tools (gating interno leve) sem duplicar lógica.",
+    "whenRuns": [
+      "No bootstrap do Hub (carregar defaults e overrides locais).",
+      "Ao trocar contexto (recalcular flags efetivas e invalidar caches).",
+      "Quando NavigationService/RouteGuards precisam saber se feature/tool está habilitada.",
+      "Quando tool usa gating interno leve por featureKey."
+    ],
+    "inputs": [
+      {
+        "name": "Runtime Config",
+        "detail": "Defaults de flags por ambiente e overrides (ex.: config.json OnPrem)."
+      },
+      {
+        "name": "Context snapshot",
+        "detail": "Tenant/cliente/projeto/ambiente ativos e atributos mínimos para rules simples."
+      },
+      {
+        "name": "Tool contract flags (opcional)",
+        "detail": "ToolFeatureFlags declaradas por tool (capabilities) para namespace e catálogo."
+      },
+      {
+        "name": "Storage (opcional)",
+        "detail": "Persistir overrides locais (ex.: modo debug/admin) com TTL e escopo."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Effective flags",
+        "detail": "Mapa reativo de flags efetivas (global + por toolKey/featureKey) com versões."
+      },
+      {
+        "name": "API",
+        "detail": "isEnabled(key), watch(key), snapshot() e helpers por namespace."
+      },
+      {
+        "name": "Reason/debug",
+        "detail": "Razão opcional (default/override/contextRule) para auditoria e troubleshooting."
+      }
+    ],
+    "responsibilities": [
+      "Ser a fonte única do estado de feature flags no frontend.",
+      "Resolver flags efetivas de forma determinística por contexto/ambiente.",
+      "Suportar namespace por toolKey (evitar colisões) e chaves estáveis.",
+      "Expor API reativa e snapshots seguros para AccessDecision/RouteGuards/Tools.",
+      "Evitar over-engineering: rules simples e configuráveis; sem engine complexa."
+    ],
+    "nonResponsibilities": [
+      "Não substituir autorização (flag ≠ permissão; isso é access-decision).",
+      "Não é policy engine (ABAC): rules aqui são simples e limitadas.",
+      "Não fazer chamadas HTTP obrigatórias (preferir runtime config local; sync remoto só se necessário).",
+      "Não implementar UI de toggle/admin (isso seria outra lib/página).",
+      "Não quebrar app em ausência de config (defaults devem existir).",
+      "Não carregar “milhares” de flags sem governança (evitar explosão de chaves)."
+    ],
+    "dependencies": [
+      {
+        "name": "error-model",
+        "why": "Normalizar falhas de config/rules (flagConfigInvalid, missingKey) sem quebrar o app."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Eventos mínimos: flags.loaded, flags.contextChanged, flags.overrideUsed (sem dados sensíveis)."
+      },
+      {
+        "name": "runtime-config (recomendado)",
+        "why": "Fonte de defaults/overrides por ambiente; hoje não está explícito no inventário (gap recomendado)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/feature-flags/src/lib/",
+      "files": [
+        {
+          "path": "feature-flags.service.ts",
+          "purpose": "Resolve flags efetivas; API isEnabled/watch/snapshot; invalida em context change."
+        },
+        {
+          "path": "feature-flags.model.ts",
+          "purpose": "Tipos: FlagKey, FlagState, FlagReason, Namespace, Overrides."
+        },
+        {
+          "path": "feature-flags.rules.ts",
+          "purpose": "Rules simples e declarativas (opcional) para contexto/ambiente."
+        },
+        {
+          "path": "feature-flags.util.ts",
+          "purpose": "Helpers: namespace, merge defaults/overrides, validações."
+        },
+        {
+          "path": "feature-flags.spec.ts",
+          "purpose": "Testes: merge default/override, context change, namespace, determinismo."
+        },
+        {
+          "path": "feature-flags.validation.ts",
+          "purpose": "Valida estrutura e consistência do FlagSet: chaves duplicadas, namespace inválido, tipos incompatíveis e rules não suportadas, falhando cedo para evitar comportamento imprevisível em runtime."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir FlagKey estável e suportar namespace (global e toolKey.featureKey).",
+      "Implementar FeatureFlagsService: carregar defaults do runtime config e aplicar overrides (se houver).",
+      "Resolver estado efetivo por contexto: merge determinístico + rules simples opcionais.",
+      "Expor API: isEnabled(key), watch(key), snapshot() e helpers por toolKey.",
+      "Integrar com ContextService (ou adapter) para recalcular no context change.",
+      "Criar testes mínimos: defaults, overrides, namespace, invalidação por contexto."
+    ],
+    "acceptanceCriteria": [
+      "FeatureFlags é a fonte única de habilitação de features/tools no frontend.",
+      "isEnabled e watch funcionam para chaves globais e por toolKey.",
+      "Mudança de contexto recalcula flags efetivas e atualiza subscribers.",
+      "Sem confundir flags com permissões (não decide acesso final).",
+      "Sem dependência obrigatória de HTTP (defaults locais).",
+      "Testes mínimos cobrindo merge e context change."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Feature Flags Fundamentals",
+          "goal": "Modelar flags determinísticas com namespace e API reativa.",
+          "level": "Base",
+          "knowledge": [
+            "Defaults vs overrides",
+            "Namespace por toolKey",
+            "API isEnabled/watch/snapshot"
+          ]
+        },
+        {
+          "title": "Rollout & Governance",
+          "goal": "Evitar explosão de flags e manter governança e auditabilidade.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Reason codes (default/override/rule)",
+            "Integração com contexto",
+            "Limites para rules (evitar engine complexa)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar feature-flags: service determinístico com namespace (global e toolKey.featureKey), merge defaults/overrides, invalidação em context change, API isEnabled/watch/snapshot, reason codes opcionais e testes mínimos. Sem HTTP obrigatório.",
+      "generationSteps": [
+        "Criar models (FlagKey, FlagState, FlagReason).",
+        "Criar service com load defaults + merge overrides.",
+        "Adicionar namespace helpers e rules simples opcionais.",
+        "Integrar com context change (invalidate/recompute).",
+        "Criar testes mínimos de determinismo e context change."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Rollout"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR define padrão de keys e namespace",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem engine complexa de rules",
+        "Testes de merge/invalidação por contexto"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: flag desabilita deep link/rota da tool no Hub",
+        "Notas de decisão (quais flags são globais vs por tool)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do feature-flags)",
+        "Guia: naming + namespace de flags",
+        "Playbook: troubleshooting (flag off, overrides, context)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/feature-flags/jest.config.ts"
+      }
+    }
+  }
+}

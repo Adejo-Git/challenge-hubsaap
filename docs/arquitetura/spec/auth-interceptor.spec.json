@@ -1,0 +1,195 @@
+{
+  "AuthInterceptor": {
+    "kind": "frontend",
+    "key": "AuthInterceptor",
+    "title": "AuthInterceptor",
+    "summary": "Interceptor HTTP de autenticação: injeta credenciais/headers necessários, correlationId e trata cenários 401/403 de forma padronizada sem acoplar componentes ao transporte.",
+    "function": "Interceptar chamadas HTTP feitas por clients/SDKs para anexar informações de autenticação e correlação (Authorization/header equivalente, correlationId, context headers quando aplicável). Também normaliza erros de auth (401/403) para o error-model e dispara sinais controlados (ex.: invalidar sessão quando 401 persistente) sem loops.",
+    "whenRuns": [
+      "Em toda requisição HTTP iniciada por api-clients-sdk/tool-data-access-sdk/data-access-*.",
+      "Quando o backend retorna 401/403 e o frontend precisa normalizar erro e reagir (ex.: sessão inválida).",
+      "Quando a aplicação precisa adicionar headers de correlação/observabilidade."
+    ],
+    "inputs": [
+      {
+        "name": "AuthSession",
+        "detail": "Fonte de snapshot seguro e, quando permitido, mecanismo interno de obtenção do header de auth (sem expor token para UI)."
+      },
+      {
+        "name": "Runtime Config",
+        "detail": "Config para header names, allowlist/denylist de domínios e rotas públicas."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Correlação: correlationId e telemetria mínima por request."
+      },
+      {
+        "name": "ErrorModel",
+        "detail": "Normalização de erros (401/403 → error code padronizado)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "HTTP headers enriched",
+        "detail": "Authorization (ou equivalente), correlationId e headers de contexto (quando aplicável)."
+      },
+      {
+        "name": "Standard auth errors",
+        "detail": "Erros padronizados para consumers (SDKs/UI) sem mensagens ad-hoc."
+      },
+      {
+        "name": "Controlled session signals",
+        "detail": "Sinais controlados para invalidar sessão em casos definidos (sem loops)."
+      }
+    ],
+    "responsibilities": [
+      "Anexar headers de autenticação apenas quando aplicável (rotas protegidas e domínios permitidos).",
+      "Adicionar correlationId e metadados mínimos para observabilidade.",
+      "Normalizar respostas 401/403 para o error-model.",
+      "Evitar loops: não interceptar endpoints de login/callback/refresh conforme config.",
+      "Manter regras configuráveis (allowlist/denylist e rotas públicas)."
+    ],
+    "nonResponsibilities": [
+      "Não implementar lógica de refresh token complexa dentro do interceptor (evitar over-engineering).",
+      "Não fazer navegação/redirect (isso é AuthGuard e fluxo de auth).",
+      "Não acessar storage diretamente (isso é AuthSession/StorageService).",
+      "Não logar headers sensíveis (Authorization nunca vai para logs).",
+      "Não decidir autorização (403 não vira “regra”; apenas erro padronizado)."
+    ],
+    "dependencies": [
+      {
+        "name": "auth-session",
+        "why": "Fonte de snapshot/credencial para construir header de auth sem expor token para UI."
+      },
+      {
+        "name": "http-base",
+        "why": "Pipeline HTTP comum (base interceptors, correlation) e configuração global."
+      },
+      {
+        "name": "error-model",
+        "why": "Normalização de erros de auth em códigos previsíveis."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "CorrelationId e telemetria mínima de request/response (sem dados sensíveis)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/auth-interceptor/src/lib/",
+      "files": [
+        {
+          "path": "auth.interceptor.ts",
+          "purpose": "Interceptor: injeta headers e normaliza 401/403 com regras de bypass configuráveis."
+        },
+        {
+          "path": "auth-interceptor.config.ts",
+          "purpose": "Config: allowlist/denylist, rotas públicas, header names."
+        },
+        {
+          "path": "auth-interceptor.util.ts",
+          "purpose": "Helpers: shouldAttachAuth, isPublicRoute, sanitizeError."
+        },
+        {
+          "path": "auth-interceptor.spec.ts",
+          "purpose": "Testes: adiciona header quando deve; não adiciona em públicos; normaliza 401/403; sem loops."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir config do interceptor: allowlist de domínios, paths públicos e endpoints de auth a ignorar.",
+      "Implementar shouldAttachAuth(req) para decidir se injeta Authorization (ou header custom).",
+      "Obter credencial via AuthSession de forma encapsulada (sem expor token para consumers).",
+      "Injetar correlationId (ou respeitar se já existir) e headers mínimos de observabilidade.",
+      "Ao receber 401/403: mapear para error-model; opcionalmente sinalizar AuthSession para invalidar em condições controladas.",
+      "Garantir que endpoints de login/callback/refresh não sejam interceptados (evitar loop).",
+      "Criar testes mínimos cobrindo attach/no-attach e normalização 401/403."
+    ],
+    "acceptanceCriteria": [
+      "Authorization/header de auth é anexado apenas quando aplicável e conforme config.",
+      "Endpoints públicos e de auth não recebem header (e não geram loop).",
+      "401/403 são normalizados para error-model (códigos consistentes).",
+      "CorrelationId é aplicado sem logar dados sensíveis.",
+      "Testes mínimos cobrem cenários essenciais."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "HTTP Interceptors (Security & Control)",
+          "goal": "Aplicar headers e normalizar erros de auth com regras configuráveis e sem loops.",
+          "level": "Base",
+          "knowledge": [
+            "HttpInterceptor e chaining",
+            "Bypass (public routes) e allowlist/denylist",
+            "Tratamento seguro de 401/403"
+          ]
+        },
+        {
+          "title": "Correlation & Safe Telemetry",
+          "goal": "Implementar correlação e telemetria mínima sem expor dados sensíveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "CorrelationId e headers",
+            "Sanitização de logs",
+            "Integração com ObservabilityService"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar auth-interceptor: interceptor com config (allowlist/denylist + rotas públicas), injeta header de auth obtido via auth-session (sem expor token), adiciona correlationId, normaliza 401/403 para error-model e evita loops. Entregar util + testes mínimos.",
+      "generationSteps": [
+        "Criar config do interceptor e util shouldAttachAuth.",
+        "Implementar interceptor com attach/bypass.",
+        "Implementar normalização 401/403 para error-model.",
+        "Adicionar correlationId via observability/http-base.",
+        "Criar testes mínimos (attach/no-attach, 401/403, bypass endpoints auth)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta rotas públicas e endpoints ignorados (anti-loop)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Authorization nunca vai para logs",
+        "Testes cobrindo 401/403 e attach/bypass"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: request recebe header em endpoint protegido e não recebe em público",
+        "Notas de decisão (quando invalidar sessão ao receber 401)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do auth-interceptor)",
+        "Guia: regras de bypass (public routes / auth endpoints) e allowlist",
+        "Playbook: troubleshooting (401 loop, header não anexado, CORS)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:platform"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/auth-interceptor/jest.config.ts",
+        "profile": "basic",
+        "setupMode": "none"
+      }
+    }
+  }
+}

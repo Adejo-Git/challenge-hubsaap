@@ -1,0 +1,20 @@
+{
+  "name": "api-clients-sdk",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/contracts/api-clients-sdk/src",
+  "prefix": "hub",
+  "projectType": "library",
+  "tags": ["type:shared", "scope:api-clients-sdk", "platform:frontend"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/contracts/api-clients-sdk/jest.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

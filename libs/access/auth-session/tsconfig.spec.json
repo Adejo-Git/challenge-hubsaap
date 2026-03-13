@@ -1,0 +1,16 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "isolatedModules": true,
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "auth-session/src/**/*.test.ts",
+    "auth-session/src/**/*.spec.ts",
+    "auth-session/src/**/*.d.ts",
+    "jest.config.ts"
+  ]
+}

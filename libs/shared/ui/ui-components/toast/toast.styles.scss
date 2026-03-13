@@ -1,0 +1,62 @@
+// src/app/lib/ui-components/toast/toast.styles.scss
+
+.ui-toast {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  background-color: var(--color-surface-alt);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  min-width: calc(var(--spacing-3xl) * 14);
+  max-width: calc(var(--spacing-3xl) * 18);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  pointer-events: auto;
+  transition: transform var(--accessibility-motionBase) ease, opacity var(--accessibility-motionBase) ease;
+
+  &.variant-info {
+    border-left: var(--spacing-xs) solid var(--color-status-info);
+  }
+
+  &.variant-success {
+    border-left: var(--spacing-xs) solid var(--color-status-success);
+  }
+
+  &.variant-warning {
+    border-left: var(--spacing-xs) solid var(--color-status-warning);
+  }
+
+  &.variant-error {
+    border-left: var(--spacing-xs) solid var(--color-status-error);
+  }
+}
+
+.ui-toast__title {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+.ui-toast__message {
+  font-size: var(--font-size-sm);
+}
+
+.ui-toast__close {
+  align-self: flex-end;
+  cursor: pointer;
+  opacity: 0.6;
+  background: none;
+  border: none;
+  font-size: var(--font-size-md);
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: var(--accessibility-focusRing-width) solid var(--accessibility-focusRing-color);
+    outline-offset: var(--accessibility-focusRing-offset);
+  }
+}

@@ -1,0 +1,52 @@
+// src\app\lib\ui-components\divider\divider.styles.scss
+
+.ui-divider {
+  background-color: var(--color-border-muted);
+  border: none;
+}
+
+/* =====================
+   ORIENTATION
+===================== */
+
+.ui-divider--horizontal {
+  width: 100%;
+  height: calc(var(--spacing-xs) / 4);
+}
+
+.ui-divider--vertical {
+  width: calc(var(--spacing-xs) / 4);
+  height: 100%;
+}
+
+/* =====================
+   SPACING
+===================== */
+
+.ui-divider--sm {
+  margin: var(--spacing-sm) 0;
+}
+
+.ui-divider--md {
+  margin: var(--spacing-md) 0;
+}
+
+.ui-divider--lg {
+  margin: var(--spacing-lg) 0;
+}
+
+/* =====================
+   VERTICAL SPACING
+===================== */
+
+.ui-divider--vertical.ui-divider--sm {
+  margin: 0 var(--spacing-sm);
+}
+
+.ui-divider--vertical.ui-divider--md {
+  margin: 0 var(--spacing-md);
+}
+
+.ui-divider--vertical.ui-divider--lg {
+  margin: 0 var(--spacing-lg);
+}

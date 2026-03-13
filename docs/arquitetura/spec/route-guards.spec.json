@@ -1,0 +1,208 @@
+{
+  "RouteGuards": {
+    "kind": "frontend",
+    "key": "RouteGuards",
+    "title": "RouteGuards",
+    "summary": "Guards de rota do Hub: aplica a decisão final de acesso (RBAC/ABAC/flags) para impedir bypass de navegação por URL direta, especialmente em /tools/*.",
+    "function": "Aplicar a decisão final de acesso nas rotas do Shell e das tools. Valida se o usuário pode entrar na rota (canEnter), se a tool/feature está habilitada (flags) e se as políticas permitem acesso no contexto atual. Quando negar, redireciona para 401/403/404 conforme regra e publica o resultado para observabilidade.",
+    "whenRuns": [
+      "Ao navegar para rotas protegidas do Shell (além do AuthGuard).",
+      "Ao acessar /tools/* via URL direta (prevenção de bypass).",
+      "Ao ativar rotas de tools lazy (canMatch/canActivate).",
+      "Ao trocar contexto e tentar acessar rota previamente válida (revalidação por contexto)."
+    ],
+    "inputs": [
+      {
+        "name": "ActivatedRouteSnapshot / RouterStateSnapshot",
+        "detail": "Rota alvo, dados de rota (route.data) e URL atual para decisão."
+      },
+      {
+        "name": "AccessDecisionService",
+        "detail": "Fonte única da decisão final (flags + permissions + policies) para canEnter/canView/canExecute."
+      },
+      {
+        "name": "ToolRegistryService",
+        "detail": "Validação de existência da tool e metadados (toolKey, rotas, requisitos mínimos)."
+      },
+      {
+        "name": "FeatureFlagService",
+        "detail": "Habilitação por contexto/ambiente (bloqueia tool/rota desabilitada)."
+      },
+      {
+        "name": "NavigationService",
+        "detail": "Opcional: reconciliação de breadcrumb/menu quando negar acesso."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "allow/deny (boolean/UrlTree)",
+        "detail": "Libera a navegação ou retorna UrlTree para fallback adequado."
+      },
+      {
+        "name": "fallback coerente",
+        "detail": "403 quando sem permissão; 404 quando tool/rota não existe ou está desabilitada; 401 apenas se sessão inválida (normalmente coberto pelo AuthGuard)."
+      },
+      {
+        "name": "telemetria de decisão",
+        "detail": "Evento de “guard-allow/guard-deny” com motivo técnico (sem dados sensíveis)."
+      }
+    ],
+    "responsibilities": [
+      "Impedir bypass por URL direta (principal motivo de existir).",
+      "Aplicar decisão final de acesso (não reimplementar RBAC/ABAC no guard).",
+      "Bloquear tool/rota desabilitada por flag/contexto com fallback consistente (normalmente 404).",
+      "Padronizar o mapeamento de negação: 401 vs 403 vs 404 (sem comportamento ambíguo).",
+      "Manter o guard puro e previsível: retornar boolean/UrlTree e minimizar side effects."
+    ],
+    "nonResponsibilities": [
+      "Não autenticar usuário (isso é AuthGuard + SessionService).",
+      "Não calcular permissões/policies localmente (não chamar PermissionService/PolicyEngine direto).",
+      "Não fazer chamadas HTTP diretas (sem HttpClient no guard).",
+      "Não construir menu/breadcrumbs manualmente (isso é NavigationService).",
+      "Não conhecer detalhes internos de cada tool além do mínimo (toolKey/flag/permission map)."
+    ],
+    "dependencies": [
+      {
+        "name": "AuthGuard",
+        "why": "Autenticação deve ocorrer antes; Route Guards assume sessão válida na maioria dos fluxos."
+      },
+      {
+        "name": "AccessDecisionService (Access Layer)",
+        "why": "Fonte única de decisão final (flags + permissions + policies) para canEnter/canView."
+      },
+      {
+        "name": "ToolRegistryService (Access Layer)",
+        "why": "Garantir que a tool existe e obter metadados mínimos para validação de entrada."
+      },
+      {
+        "name": "FeatureFlagService (Access Layer)",
+        "why": "Bloquear acesso quando feature/tool está desabilitada por contexto/ambiente."
+      },
+      {
+        "name": "NavigationService (Access Layer)",
+        "why": "Opcional para reconciliação de navegação/breadcrumbs após negar/redirecionar."
+      },
+      {
+        "name": "ObservabilityService (Shared-Libs)",
+        "why": "Registrar eventos mínimos de allow/deny e motivo técnico sem dados sensíveis."
+      },
+      {
+        "name": "ErrorPages (Shared-Libs)",
+        "why": "Fallback consistente para 401/403/404/erro em redirecionamentos."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/shell/src/app/shell/router/route-guards/",
+      "files": [
+        {
+          "path": "route-guards.ts",
+          "purpose": "Implementa CanActivate/CanMatch; consulta AccessDecisionService e retorna UrlTree/boolean."
+        },
+        {
+          "path": "route-guards.util.ts",
+          "purpose": "Mapeia denyReason → UrlTree (401/403/404) e extrai toolKey/featureKey da rota."
+        },
+        {
+          "path": "route-guards.spec.ts",
+          "purpose": "Testes: bloqueia sem permissão; bloqueia tool desabilitada; bloqueia tool inexistente; libera quando permitido."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Implementar RouteGuards como CanActivate e CanMatch (para rotas lazy de tools).",
+      "Extrair do route.data os requisitos mínimos (ex.: toolKey, permissionKey, featureFlagKey).",
+      "Validar existência da tool no ToolRegistryService (se não existir → 404).",
+      "Validar flag mínima no FeatureFlagService (se desabilitada → 404 ou 403 conforme regra definida).",
+      "Consultar AccessDecisionService.canEnter(route, context) e decidir allow/deny.",
+      "Ao negar, retornar UrlTree para a página correta (403 sem permissão; 404 inexistente/desabilitada).",
+      "Registrar telemetria mínima (allow/deny + reason) no ObservabilityService.",
+      "Cobrir testes para: allow, deny-permission(403), deny-flag(404), deny-unknown-tool(404)."
+    ],
+    "acceptanceCriteria": [
+      "Acesso direto por URL a rotas protegidas é bloqueado conforme decisão de acesso.",
+      "Tool desabilitada por flag/contexto não abre por URL (fallback coerente).",
+      "Tool inexistente (rota inválida) redireciona para 404.",
+      "Sem HttpClient direto no guard.",
+      "Sem loops de redirect (não alternar entre 403/404 indefinidamente).",
+      "Testes mínimos cobrindo allow/deny e mapeamento 401/403/404."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Authorization Guards (RBAC/ABAC + Flags)",
+          "goal": "Aplicar decisão final de acesso em rotas sem duplicar lógica de permissão.",
+          "level": "Intermediário",
+          "knowledge": [
+            "CanActivate vs CanMatch em rotas lazy",
+            "Mapeamento 401/403/404 e fallback previsível",
+            "Integração com AccessDecisionService e ToolRegistry"
+          ]
+        },
+        {
+          "title": "Bypass Prevention & Secure Navigation",
+          "goal": "Evitar bypass por URL e manter consistência entre menu e rotas.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Route.data como contrato mínimo",
+            "Flags por contexto e invalidação por mudança de contexto",
+            "Telemetria segura (sem dados sensíveis)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar RouteGuards do Hub: CanActivate/CanMatch, extrair toolKey/flag/permission de route.data, validar ToolRegistry + FeatureFlag, consultar AccessDecisionService.canEnter, retornar UrlTree 403/404 conforme motivo, registrar telemetria mínima. Sem HttpClient direto. Entregar TS + utils + testes mínimos.",
+      "generationSteps": [
+        "Gerar boilerplate (route-guards.ts, util, spec).",
+        "Implementar extração de requisitos (toolKey/flag/permission) de route.data.",
+        "Implementar fluxo de validação (registry → flags → decision).",
+        "Implementar mapeamento denyReason → UrlTree (403/404).",
+        "Criar testes mínimos (allow/deny por motivo)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Security-first",
+        "Bypass prevention"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR com rotas impactadas e contrato de route.data documentado",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem lógica RBAC/ABAC no guard (somente AccessDecisionService)",
+        "Mapeamento 401/403/404 consistente e testado",
+        "Telemetria sem dados sensíveis"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro de teste (URL direta: allow/403/404)",
+        "Notas de decisão (ex.: quando usar 404 vs 403 para flag desabilitada)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do Route Guards)",
+        "Guia: como declarar route.data (toolKey/flag/permission) para tools",
+        "Playbook: troubleshooting de 403/404 em /tools/*"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:shell"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/shell/jest.config.ts"
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+// src\app\lib\ui-layout\layout-shell\layout-shell.component.scss
+
+.ui-layout-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+
+  &__topbar {
+    flex-shrink: 0;
+    z-index: var(--z-index-sticky);
+  }
+
+  &__body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  &__sidebar {
+    flex-shrink: 0;
+    z-index: var(--z-index-dropdown);
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__right-panel {
+    flex-shrink: 0;
+    z-index: var(--z-index-popover);
+  }
+}

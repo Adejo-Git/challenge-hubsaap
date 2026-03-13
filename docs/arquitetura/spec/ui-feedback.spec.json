@@ -1,0 +1,217 @@
+{
+  "UiFeedback": {
+    "kind": "frontend",
+    "key": "UiFeedback",
+    "title": "UiFeedback",
+    "summary": "Componentes e patterns de feedback de UX (loading/empty/error/denied/success) para padronizar estados e mensagens no Shell e nas Tools.",
+    "function": "Shared UI/Design System que entrega componentes reutilizáveis de feedback para o Hub-Saap: loaders/skeletons, empty states, error/denied states, banners/inline alerts e padrões de confirmação/sucesso. O objetivo é garantir consistência visual e comportamental (acessibilidade, mensagens padronizadas e estados previsíveis), sem acoplar a UI a regras de domínio, permissões ou chamadas HTTP.",
+    "whenRuns": [
+      "Quando uma tela ou seção estiver em loading (carregamento inicial, refresh, mudança de contexto).",
+      "Quando uma lista ou seção retornar vazia (empty state) e precisa orientar o próximo passo.",
+      "Quando ocorrer erro (ex.: falha de API, timeout, validação) e precisa comunicar com mensagem segura.",
+      "Quando o usuário não tiver permissão para ver/acionar uma funcionalidade (denied state).",
+      "Quando uma ação for concluída com sucesso e precisa confirmar (toast/badge/banner)."
+    ],
+    "inputs": [
+      {
+        "name": "UiTokens / Theme",
+        "detail": "Tokens de cor/spacing/typography e variants visuais para manter consistência do design system."
+      },
+      {
+        "name": "UiIcons",
+        "detail": "Ícones padrão para estados (info/success/warn/error/lock/loading)."
+      },
+      {
+        "name": "ErrorModel (shared)",
+        "detail": "Payload padronizado de erro para mapear em mensagens user-friendly sem vazar detalhes técnicos."
+      },
+      {
+        "name": "i18n-core (opcional)",
+        "detail": "Traduções/chaves de mensagem para internacionalização e padronização de textos."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Feedback Components",
+        "detail": "Componentes: UiLoader, UiSkeleton, UiEmptyState, UiErrorState, UiDeniedState, UiBanner/UiAlert."
+      },
+      {
+        "name": "Feedback API",
+        "detail": "Helpers: mapErrorToMessage(), defaultEmptyActions(), feedbackVariants."
+      },
+      {
+        "name": "UX States padronizados",
+        "detail": "Contratos de estado: loading/empty/error/denied/success com props consistentes."
+      }
+    ],
+    "responsibilities": [
+      "Padronizar estados de UX (loading/empty/error/denied/success) em Shell e Tools.",
+      "Fornecer componentes reutilizáveis e acessíveis (aria-live, foco, contraste, texto alternativo).",
+      "Mapear ErrorModel para mensagens seguras (sem stacktrace/PII), com fallback padrão.",
+      "Oferecer layout consistente para “call to action” em empty/erro (ex.: “tentar novamente”, “voltar”, “abrir ajuda").",
+      "Evitar duplicação de padrões de feedback em cada tool, mantendo UX consistente no Hub."
+    ],
+    "dependencies": [
+      {
+        "name": "Shared UI / Design System",
+        "why": "Depende de UiTokens, UiIcons e primitives do design system."
+      },
+      {
+        "name": "Shared Contracts",
+        "why": "Consome ErrorModel para padronizar mensagens e tipos de estado."
+      },
+      {
+        "name": "i18n-core (opcional)",
+        "why": "Internacionalização e padronização de mensagens."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-feedback/src/lib/",
+      "files": [
+        {
+          "path": "ui-feedback.module.ts (ou index.ts)",
+          "purpose": "Exports públicos do pacote (barrel) e composição dos componentes."
+        },
+        {
+          "path": "components/ui-loader/ui-loader.component.ts",
+          "purpose": "Loader padrão (spinner/linear) com variantes."
+        },
+        {
+          "path": "components/ui-skeleton/ui-skeleton.component.ts",
+          "purpose": "Skeletons (cards/lines) para loading perceptivo."
+        },
+        {
+          "path": "components/ui-empty-state/ui-empty-state.component.ts",
+          "purpose": "Empty state com icon, texto, CTA e links."
+        },
+        {
+          "path": "components/ui-error-state/ui-error-state.component.ts",
+          "purpose": "Error state padronizado + retry/correlationId (sem vazar detalhes)."
+        },
+        {
+          "path": "components/ui-denied-state/ui-denied-state.component.ts",
+          "purpose": "Denied state padronizado (lock) com instruções e CTA seguro."
+        },
+        {
+          "path": "components/ui-banner/ui-banner.component.ts",
+          "purpose": "Banner/inline alert (info/success/warn/error)."
+        },
+        {
+          "path": "ui-feedback.models.ts",
+          "purpose": "Tipos: FeedbackState, FeedbackVariant, FeedbackAction, UiMessage."
+        },
+        {
+          "path": "ui-feedback.mappers.ts",
+          "purpose": "Mapeadores: ErrorModel -> UiMessage, helpers de texto e fallback."
+        },
+        {
+          "path": "ui-feedback.spec.ts",
+          "purpose": "Testes: render básico, props, estados e acessibilidade mínima."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir modelos contratuais: FeedbackState (loading/empty/error/denied/success) e FeedbackAction (label, icon, handlerKey).",
+      "Criar componentes de estado com API consistente (title, message, icon, actions, detailsSafe).",
+      "Implementar mapper ErrorModel -> UiMessage com redaction/fallback e sem detalhes técnicos.",
+      "Garantir acessibilidade: aria-live para toasts/banners, foco em erro crítico, roles adequadas.",
+      "Criar variants visuais baseadas em tokens (info/success/warn/error/neutral).",
+      "Criar exemplos/documentação de uso no catálogo (como usar em páginas do Shell e Tools)."
+    ],
+    "acceptanceCriteria": [
+      "Existe um conjunto mínimo de componentes para estados: loading/empty/error/denied (+ banner/alert).",
+      "Props e tipos são consistentes e reutilizáveis por Shell e Tools.",
+      "ErrorModel é mapeado para mensagem segura (sem stacktrace, sem PII).",
+      "Componentes possuem acessibilidade mínima (roles/aria-live/foco/contraste).",
+      "Sem dependência de Shell ou de ferramentas específicas; é reutilizável em qualquer tool."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "UX States & A11y no Design System",
+          "goal": "Padronizar estados de UX com acessibilidade e consistência visual.",
+          "level": "Intermediário",
+          "knowledge": [
+            "A11y (aria-live, roles, foco e contraste)",
+            "Component API design (inputs/outputs estáveis)",
+            "Estados: loading/empty/error/denied com CTA seguro"
+          ]
+        },
+        {
+          "title": "ErrorModel → UX Feedback",
+          "goal": "Transformar erros técnicos em mensagens user-friendly e seguras.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Redaction e segurança (sem PII)",
+            "Fallbacks e mensagens consistentes",
+            "Integração com observabilidade via correlationId (sem acoplar)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar UiFeedback como shared UI library com componentes de estados (loading/empty/error/denied) + banners, tipos estáveis e mapper de ErrorModel para mensagem segura, com testes mínimos e acessibilidade.",
+      "generationSteps": [
+        "Criar modelos (FeedbackState/Variant/Action) e exports públicos.",
+        "Criar componentes base (Loader/Skeleton/Empty/Error/Denied/Banner).",
+        "Criar mappers (ErrorModel -> UiMessage) com fallback e redaction.",
+        "Adicionar testes básicos e checagens de a11y mínimas.",
+        "Gerar exemplos de uso (snippets) para Shell e Tools."
+      ],
+      "tags": [
+        "Design System",
+        "A11y",
+        "ErrorModel",
+        "Reusable",
+        "No Domain"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "API dos componentes estável (inputs/outputs e models) e documentada",
+        "Estados essenciais cobertos (loading/empty/error/denied)",
+        "Mapeamento de erro seguro (sem PII/stacktrace)",
+        "Sem dependência de Shell/Tool específicos",
+        "Boundaries passando (Nx enforce-module-boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Print/registro do gate pass",
+        "Exemplos de uso em 2 contextos: Shell e uma Tool",
+        "Checklist de acessibilidade mínima validado (manual/automático)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Catálogo: “Como usar UiFeedback em telas e seções”",
+        "Playbook: padrões de mensagens e CTAs para empty/error/denied",
+        "Exemplos de payload: ErrorModel → mensagem"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não decidir permissões/policies (não usa PolicyEngine/PermissionService).",
+      "Não executar chamadas HTTP nem tratar retry real (apenas expõe ação/CTA).",
+      "Não implementar notificações de plataforma (isso é NotificationService/NotificationCenter).",
+      "Não conter lógica de domínio de nenhuma tool."
+    ],
+    "nx": {
+      "tags": [
+        "type:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/shared/ui/ui-feedback/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

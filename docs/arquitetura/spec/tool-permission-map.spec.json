@@ -1,0 +1,181 @@
+{
+  "ToolPermissionMap": {
+    "kind": "frontend",
+    "key": "ToolPermissionMap",
+    "title": "ToolPermissionMap",
+    "summary": "Contrato declarativo de permissões da Tool: descreve requisitos de acesso por rota/capacidade/ação para o Hub aplicar decisão centralizada.",
+    "function": "Publicar um mapa determinístico de permissões necessárias para acessar rotas e executar ações relevantes da tool. O Hub usa esse mapa em conjunto com o Access Layer (RBAC/ABAC/policies) para autorizar entrada e filtrar navegação. A tool pode consumir o mapa apenas para UX (ex.: esconder botões), sem implementar o motor de autorização.",
+    "whenRuns": [
+      "Quando RouteGuards avalia acesso a /tools/<toolKey> e a rotas internas (via decisão central).",
+      "Quando NavigationService filtra deep links e itens de menu por permissão.",
+      "Quando a tool precisa ajustar UX (esconder/disable ações) com base em capacidades permitidas (somente leitura do mapa)."
+    ],
+    "inputs": [
+      {
+        "name": "Permission Keys",
+        "detail": "Chaves estáveis de permissão (ex.: \"pip.view\", \"pip.edit\", \"pip.admin\")."
+      },
+      {
+        "name": "Targets",
+        "detail": "Alvos: rotas internas, deep links e ações (capabilities) que exigem permissão."
+      },
+      {
+        "name": "Levels/Scopes (opcional)",
+        "detail": "Escopo declarativo (ex.: tenant/project) para orientar decisão no Hub."
+      },
+      {
+        "name": "ToolFeatureFlags (opcional)",
+        "detail": "Relacionamento declarativo: certas permissões só fazem sentido com determinada feature habilitada."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Permission Map",
+        "detail": "Mapa exportado: routeKey/actionKey → requiredPermissions (AND/OR) + metadados."
+      },
+      {
+        "name": "Audit-ready contract",
+        "detail": "Contrato versionável para catálogo, auditoria e revisão de segurança."
+      }
+    ],
+    "responsibilities": [
+      "Declarar permissões mínimas por rota/capacidade/ação relevantes da tool.",
+      "Manter chaves estáveis e namespaceadas por tool para evitar colisões.",
+      "Permitir que o Hub aplique autorização central, sem depender de código interno da tool.",
+      "Separar “entrada/visualização” de “ações” (ex.: view vs edit vs approve).",
+      "Evitar granularidade excessiva: começar com permissões macro e refinar por evidência."
+    ],
+    "nonResponsibilities": [
+      "Não implementar verificação de permissão (motor de autorização é do Hub).",
+      "Não fazer chamadas HTTP para validar permissões.",
+      "Não duplicar RBAC/ABAC/policies dentro da tool.",
+      "Não conter regras de fallback (401/403/404).",
+      "Não virar um “ACL infinito”: evitar over-engineering com centenas de keys sem necessidade."
+    ],
+    "dependencies": [
+      {
+        "name": "ToolModule",
+        "why": "ToolPermissionMap é exportado como parte do contrato do plugin."
+      },
+      {
+        "name": "ToolRoutes",
+        "why": "Requisitos podem mapear para rotas internas/segments por chaves consistentes."
+      },
+      {
+        "name": "ToolMenuMetadata",
+        "why": "Deep links podem referenciar permissionKey(s) declarativos."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "why": "Permissões podem ser condicionais a features (declarativo)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/tools/<toolKey>/src/app/tool-module/",
+      "files": [
+        {
+          "path": "tool.permission-map.ts",
+          "purpose": "Declara e exporta ToolPermissionMap (route/action → required permissions)."
+        },
+        {
+          "path": "tool.permission-map.model.ts",
+          "purpose": "Tipagem do contrato (PermissionKey, PermissionRule, RuleOperator)."
+        },
+        {
+          "path": "tool.permission-map.spec.ts",
+          "purpose": "Testes: keys únicas, mapeamentos válidos, consistência com deep links/rotas."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir um namespace por tool (ex.: \"pip.*\") e começar com permissões macro (view/edit/admin).",
+      "Criar `export const TOOL_PERMISSION_MAP = {...}` mapeando alvos (routes/actions) para requiredPermissions.",
+      "Permitir composição simples (AND/OR) declarativa (ex.: [\"pip.view\"] OR [\"pip.admin\"]).",
+      "Se deep links existirem, associar permissionKey(s) declarativos para filtragem no Hub.",
+      "Criar testes mínimos: keys únicas, nenhum alvo com regra vazia, consistência com rotas/deep links."
+    ],
+    "acceptanceCriteria": [
+      "ToolPermissionMap exporta regras declarativas e versionáveis.",
+      "Permission keys são estáveis, únicas e namespaceadas pela tool.",
+      "Mapa cobre pelo menos: entrada/visualização e ações principais (quando existirem).",
+      "Não há motor de autorização dentro da tool (somente contrato).",
+      "Testes mínimos validando integridade e consistência."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Authorization Contracts",
+          "goal": "Modelar permissões como contrato consumível pelo Hub.",
+          "level": "Base",
+          "knowledge": [
+            "Naming e namespace de permissões",
+            "Mapeamento rota/ação → required permissions",
+            "Granularidade saudável (evitar over-engineering)"
+          ]
+        },
+        {
+          "title": "Security Review & Evolution",
+          "goal": "Evoluir o mapa de permissões com revisão e auditoria.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Backwards compatibility (novas permissões)",
+            "Impacto em navegação e UX",
+            "Testes de consistência do contrato"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolPermissionMap (contrato) para uma tool do Hub: permission keys namespaceadas, regras declarativas (AND/OR) por rota/ação, integração declarativa com deep links/rotas, sem motor de autorização. Entregar arquivos + testes mínimos.",
+      "generationSteps": [
+        "Gerar model/interfaces do contrato.",
+        "Criar constante exportada TOOL_PERMISSION_MAP.",
+        "Adicionar regras por targets (routes/actions).",
+        "Criar testes mínimos de integridade e consistência."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR lista permission keys e alvos cobertos (rotas/ações)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Granularidade justificada (sem explosão de keys)",
+        "Integração com deep links/rotas documentada"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demonstração: menu/rota filtra corretamente com base em permissão (no Hub)",
+        "Notas de decisão (granularidade e operadores AND/OR)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ToolPermissionMap)",
+        "Guia: naming e padrões de permission keys",
+        "Exemplo: adicionar permissão nova e atualizar mapa sem quebrar navegação"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:tools"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/tools/jest.config.ts"
+      }
+    }
+  }
+}

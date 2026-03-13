@@ -1,0 +1,119 @@
+.smart-table {
+  display: grid;
+  gap: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.smart-table--compact {
+  font-size: var(--font-size-sm);
+}
+
+.smart-table__toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.smart-table__columns {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.smart-table__column-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.smart-table__state {
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border-muted);
+  background: var(--color-surface-primary);
+}
+
+.smart-table__state--error {
+  border-color: var(--color-status-error);
+  color: var(--color-text-primary);
+}
+
+.smart-table__wrapper {
+  overflow: auto;
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-sm);
+}
+
+.smart-table__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.smart-table__table th,
+.smart-table__table td {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-muted);
+  vertical-align: middle;
+}
+
+.smart-table__table--sticky thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-primary);
+  z-index: 1;
+}
+
+.smart-table__table--zebra tbody tr:nth-child(even) {
+  background: var(--color-surface-subtle);
+}
+
+.smart-table__sort {
+  text-align: left;
+}
+
+.smart-table__btn {
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  cursor: pointer;
+}
+
+.smart-table__btn:disabled {
+  opacity: var(--accessibility-disabledOpacity, 0.5);
+  cursor: not-allowed;
+}
+
+.smart-table__btn--danger {
+  border-color: var(--color-status-error);
+}
+
+.smart-table__sort:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.smart-table__pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.smart-table__pagination-controls {
+  display: inline-flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.smart-table__filter-input,
+.smart-table select {
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+}

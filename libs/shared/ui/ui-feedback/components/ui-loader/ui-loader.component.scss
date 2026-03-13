@@ -1,0 +1,22 @@
+/* libs/shared/ui/ui-feedback/components/ui-loader/ui-loader.component.scss */
+
+.ui-loader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.ui-loader__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-border-muted);
+  border-top-color: var(--color-brand-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

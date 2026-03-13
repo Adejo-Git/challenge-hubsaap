@@ -1,0 +1,226 @@
+{
+  "AccessDecisionService": {
+    "kind": "frontend",
+    "key": "AccessDecisionService",
+    "title": "AccessDecisionService",
+    "summary": "Orquestrador de decisão final no frontend: combina sessão, contexto, flags, permissões (RBAC) e policies (PolicyEngine) para produzir decisões canEnter/canView/canExecute usadas por RouteGuards e Navigation.",
+    "function": "Fornecer uma “fonte única de verdade” para decisões de acesso no frontend. Centraliza a composição entre: SessionService (estado/auth), ContextService, FeatureFlagService, PermissionService e PolicyEngine (já definido por você). Exponibiliza API para avaliar rotas, ferramentas e ações: canEnter(route/tool), canView(menuItem), canExecute(action). Também fornece denyReason padronizado (UNAUTHENTICATED/FORBIDDEN/DISABLED/NOT_FOUND/CONTEXT_REQUIRED) para mapeamento 401/403/404 e para UI/observabilidade.",
+    "whenRuns": [
+      "Quando RouteGuards avalia entrada em rotas do Shell e /tools/*.",
+      "Quando NavigationService monta/filtra menu e breadcrumbs.",
+      "Quando UI decide habilitar/desabilitar ações (botões) de forma consistente.",
+      "Ao trocar contexto/sessão/flags/perms (recompute reativo)."
+    ],
+    "inputs": [
+      {
+        "name": "SessionService",
+        "detail": "Autenticação, claims/roles lite e status (authenticated/expired)."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Contexto ativo e regras de “context required”."
+      },
+      {
+        "name": "FeatureFlagService",
+        "detail": "Gating de tool/feature habilitada (toolKey/featureKey)."
+      },
+      {
+        "name": "PermissionService",
+        "detail": "Checagens RBAC (has/canAny/canAll) com modelo lite."
+      },
+      {
+        "name": "PolicyEngine",
+        "detail": "Avaliação de policies ABAC/condicionais (já definido por você; não duplicar)."
+      },
+      {
+        "name": "ToolRegistryService (opcional)",
+        "detail": "Metadados mínimos da tool para mapear permission/flag requirements."
+      },
+      {
+        "name": "ObservabilityService (opcional)",
+        "detail": "Evento mínimo allow/deny + denyReason (sem dados sensíveis)."
+      },
+      {
+        "name": "canEnter(route/tool)",
+        "detail": "DecisionResult (allow/deny + reason + evidence lite)."
+      },
+      {
+        "name": "canView(menuItem)",
+        "detail": "DecisionResult para itens de menu/breadcrumb."
+      },
+      {
+        "name": "canExecute(actionKey)",
+        "detail": "DecisionResult para ações (ex.: publish/approve)."
+      },
+      {
+        "name": "watchDecisions()",
+        "detail": "Stream que reavalia decisões em mudanças de sessão/contexto/flags/perms."
+      },
+      {
+        "name": "denyReason",
+        "detail": "Enum padronizado para mapear 401/403/404 e mensagens."
+      }
+    ],
+    "responsibilities": [
+      "Ser a fonte única para decisão final de acesso no frontend.",
+      "Compor flags + perms + policies de forma determinística e auditável.",
+      "Padronizar denyReason para consumo por guards e navegação.",
+      "Manter API simples: canEnter/canView/canExecute (+watch).",
+      "Evitar duplicação: RBAC fica em PermissionService, policies em PolicyEngine."
+    ],
+    "nonResponsibilities": [
+      "Não autenticar (isso é SessionService/AuthGuard).",
+      "Não montar menu diretamente (isso é NavigationService).",
+      "Não implementar RBAC (isso é PermissionService/permission-rbac).",
+      "Não implementar ABAC/policy rules (isso é PolicyEngine).",
+      "Não fazer HTTP direto."
+    ],
+    "dependencies": [
+      {
+        "name": "SessionService",
+        "why": "Pré-condição de autenticação e claims."
+      },
+      {
+        "name": "ContextService",
+        "why": "Context required e escopo."
+      },
+      {
+        "name": "FeatureFlagService",
+        "why": "Gating de disponibilidade."
+      },
+      {
+        "name": "PermissionService",
+        "why": "RBAC checks."
+      },
+      {
+        "name": "PolicyEngine",
+        "why": "Policies ABAC/condicionais (fonte existente)."
+      },
+      {
+        "name": "error-model",
+        "why": "Modelar denyReason e erros previsíveis."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Telemetria mínima allow/deny."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/decision/",
+      "files": [
+        {
+          "path": "access-decision.service.ts",
+          "purpose": "Orquestra decisão final (canEnter/canView/canExecute) e denyReason."
+        },
+        {
+          "path": "access-decision.model.ts",
+          "purpose": "Tipos: DecisionResult, DenyReason, EvidenceLite, Requirements."
+        },
+        {
+          "path": "access-decision.requirements.ts",
+          "purpose": "Extrai requirements de route.data/tool metadata/action maps."
+        },
+        {
+          "path": "access-decision.util.ts",
+          "purpose": "Helpers: merge reasons, short-circuit, deterministic ordering."
+        },
+        {
+          "path": "access-decision.spec.ts",
+          "purpose": "Testes: allow/deny por motivo (unauth/disabled/forbidden/context_required)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir DenyReason e DecisionResult com ordering determinístico (ex.: NOT_FOUND > DISABLED > UNAUTHENTICATED > FORBIDDEN > CONTEXT_REQUIRED).",
+      "Implementar extraction de requirements: toolKey, featureFlagKey, permissionKey(s), policyKey(s).",
+      "Short-circuit: negar cedo quando tool não existe/está desabilitada/sem sessão.",
+      "Delegar RBAC ao PermissionService e ABAC ao PolicyEngine.",
+      "Expor canEnter/canView/canExecute retornando DecisionResult (não só boolean).",
+      "Registrar telemetria mínima allow/deny + reason.",
+      "Criar testes por motivo e por combinação."
+    ],
+    "acceptanceCriteria": [
+      "RouteGuards usa AccessDecisionService como fonte única de decisão final.",
+      "Decisões são determinísticas e explicáveis (denyReason).",
+      "Flags ≠ permissão: DISABLED e FORBIDDEN são motivos distintos.",
+      "Sem duplicar RBAC/ABAC; PolicyEngine permanece único.",
+      "Sem HTTP direto.",
+      "Testes mínimos cobrem os principais denyReasons."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Decision Orchestration",
+          "goal": "Compor sessão, contexto, flags, RBAC e policies em uma decisão final.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Short-circuit",
+            "denyReason",
+            "Determinismo"
+          ]
+        },
+        {
+          "title": "Secure Navigation Integration",
+          "goal": "Conectar decisões a guards e navegação sem bypass.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Route.data requirements",
+            "403 vs 404",
+            "Consistency menu/route"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar AccessDecisionService (Access Layer): canEnter/canView/canExecute, compor Session+Context+FeatureFlag+Permission+PolicyEngine (já existente), retornar DecisionResult com denyReason determinístico e testes mínimos por motivo.",
+      "generationSteps": [
+        "Criar models (DecisionResult/DenyReason/Requirements).",
+        "Criar extractor de requirements (route.data/tool metadata).",
+        "Implementar service com short-circuit e composição RBAC/ABAC.",
+        "Criar testes por denyReason."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "RouteGuards consome somente AccessDecisionService para decisão final",
+        "DenyReason documentado e testado (403/404/401 coerentes)",
+        "Sem duplicar RBAC/ABAC (PermissionService/PolicyEngine únicos)",
+        "Gates passando"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: URL direta bloqueada (403/404) e menu coerente com decisão"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (AccessDecisionService)",
+        "Guia: requirements em route.data/tool metadata e mapeamento denyReason→401/403/404"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

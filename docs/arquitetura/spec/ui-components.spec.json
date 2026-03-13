@@ -1,0 +1,208 @@
+{
+  "UiComponents": {
+    "kind": "frontend",
+    "key": "UiComponents",
+    "title": "UiComponents",
+    "summary": "Biblioteca de componentes reutilizáveis do Hub: primitives e widgets (Button, Input, Modal, Toast, Card, Tabs, etc.) alinhados a ui-tokens/ui-theme, com acessibilidade e API consistente.",
+    "function": "Disponibilizar componentes de UI reutilizáveis e consistentes para Shell e Tools, baseados em tokens/tema. Inclui primitives (Button, Input, Badge) e componentes compostos (Modal/Dialog, Toast/Notification, Dropdown, Tabs). Foco em acessibilidade, coerência e estabilidade de API.",
+    "whenRuns": [
+      "Quando páginas do Shell e Tools renderizam elementos de UI comuns.",
+      "Quando NotificationService/NotificationCenter exibem toasts/alerts.",
+      "Quando ui-layout compõe páginas usando primitives.",
+      "Quando padrões (patterns-*) reutilizam componentes básicos."
+    ],
+    "inputs": [
+      {
+        "name": "UiTokens",
+        "detail": "Tokens semânticos e escalas para estilos (spacing, radius, colors, typography)."
+      },
+      {
+        "name": "UiTheme",
+        "detail": "Estado do tema (dark/light) e CSS vars aplicadas."
+      },
+      {
+        "name": "A11y requirements",
+        "detail": "Focus ring, aria labels, keyboard nav, roles, reduced motion."
+      },
+      {
+        "name": "Icons (opcional)",
+        "detail": "Integração com ui-icons-assets (ex.: Icon component)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Reusable components",
+        "detail": "Exports de componentes (standalone ou modules) consumíveis por apps/libs."
+      },
+      {
+        "name": "Consistent API",
+        "detail": "Props/inputs/outputs coerentes (size/variant/disabled/loading)."
+      },
+      {
+        "name": "A11y-ready behavior",
+        "detail": "Teclado, aria, focus management, states (hover/focus/disabled)."
+      }
+    ],
+    "responsibilities": [
+      "Fornecer primitives e componentes compostos estáveis e reutilizáveis.",
+      "Aplicar tokens/tema (sem hardcode) e garantir consistência visual.",
+      "Garantir acessibilidade (ARIA, teclado, focus trap em dialogs).",
+      "Manter API consistente entre componentes (variant/size/state).",
+      "Ser agnóstico de domínio (sem lógica do Hub/Tool)."
+    ],
+    "nonResponsibilities": [
+      "Não definir layout do Hub (isso é ui-layout).",
+      "Não implementar navegação/roteamento.",
+      "Não gerir estado de negócio (forms wizard é patterns-wizard-form-shell).",
+      "Não armazenar preferências de usuário.",
+      "Não substituir patterns-* (é base para eles)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-tokens",
+        "why": "Fonte de valores semânticos e escalas."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Aplicação de tema e variações runtime."
+      },
+      {
+        "name": "ui-icons-assets",
+        "why": "Renderização de ícones padronizados (quando aplicável)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-components/src/lib/",
+      "files": [
+        {
+          "path": "index.ts",
+          "purpose": "Barrel exports (controlar API pública do DS)."
+        },
+        {
+          "path": "primitives/button/",
+          "purpose": "ButtonComponent + styles/variants + spec."
+        },
+        {
+          "path": "primitives/input/",
+          "purpose": "InputComponent (text/number) + a11y + spec."
+        },
+        {
+          "path": "primitives/badge/",
+          "purpose": "Badge/Tag (status/variant) + spec."
+        },
+        {
+          "path": "overlays/modal/",
+          "purpose": "Modal/Dialog com focus trap + spec."
+        },
+        {
+          "path": "feedback/toast/",
+          "purpose": "Toast/Alert base consumido por NotificationService + spec."
+        },
+        {
+          "path": "navigation/tabs/",
+          "purpose": "Tabs/TabPanel com aria + spec."
+        },
+        {
+          "path": "ui-components.spec.ts",
+          "purpose": "Testes básicos cross-component (exports, theme integration smoke)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir convenções de API (variant, size, intent, disabled, loading).",
+      "Implementar primitives essenciais primeiro (Button/Input/Badge/Card).",
+      "Implementar overlays (Modal/Dialog) com focus management e escape.",
+      "Implementar feedback (Toast/Alert) com variants (info/success/warn/error).",
+      "Garantir consumo via tokens/tema (CSS vars) e focus ring padrão.",
+      "Criar testes mínimos por componente (render + aria + keyboard básico).",
+      "Padronizar exports no index.ts para evitar API “acidental”."
+    ],
+    "acceptanceCriteria": [
+      "Componentes não usam hardcode de cores/spacing (apenas tokens/tema).",
+      "API consistente (variant/size/state) em primitives.",
+      "A11y básica: aria/keyboard/focus para tabs/dialog.",
+      "Componentes podem ser usados por Shell e Tools sem dependências de domínio.",
+      "Testes mínimos existem para primitives e overlays."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 5,
+      "finalizationDays": 6
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Design System Components",
+          "goal": "Construir primitives reutilizáveis com API consistente.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Inputs/outputs consistentes",
+            "Variants/sizes",
+            "Consumo de tokens/tema"
+          ]
+        },
+        {
+          "title": "Accessibility for Components",
+          "goal": "Garantir a11y (aria/teclado/focus) em overlays e navegação.",
+          "level": "Intermediário",
+          "knowledge": [
+            "ARIA roles",
+            "Keyboard navigation",
+            "Focus trap e escape"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ui-components: primitives (Button/Input/Badge/Card), overlays (Modal/Dialog com focus trap) e feedback (Toast/Alert), todos consumindo ui-tokens/ui-theme via CSS vars, com API consistente (variant/size/state) e testes mínimos de render/a11y.",
+      "generationSteps": [
+        "Definir convenções de API e estilos base.",
+        "Gerar primitives essenciais.",
+        "Gerar Modal/Dialog com focus management.",
+        "Gerar Toast/Alert base.",
+        "Adicionar barrel exports e testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Design System",
+        "A11y"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta convenções de API (variant/size/state)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem hardcode (usa tokens/tema)",
+        "A11y validada (tabs/dialog keyboard/focus)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: botão/input/modal/toast funcionando com tema dark/light"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ui-components)",
+        "Guia: como criar novo componente DS",
+        "Checklist de a11y para componentes"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/ui-components/jest.config.ts",
+        "profile": "ts",
+        "setupMode": "none"
+      }
+    }
+  }
+}

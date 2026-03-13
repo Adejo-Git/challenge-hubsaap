@@ -1,0 +1,197 @@
+{
+  "AppShellComponent": {
+    "kind": "frontend",
+    "key": "AppShellComponent",
+    "title": "AppShellComponent",
+    "summary": "Layout raiz do Hub: define slots e orquestra o bootstrap da UI (sessão/contexto/menus).",
+    "function": "Componente raiz do portal. Define a composição visual do Hub em slots (Topbar/Sidebar/Content/RightPanel) e orquestra o bootstrap inicial (sessão/contexto/navegação), reagindo a mudanças de contexto para reconstruir visibilidade e menu sem refresh.",
+    "whenRuns": [
+      "Ao abrir o Hub pela primeira vez (rota inicial).",
+      "Ao restaurar sessão/contexto (bootstrap) para montar navegação e liberar conteúdo.",
+      "Ao trocar contexto (tenant/cliente/projeto) para reconstruir menus/visibilidade e re-renderizar o layout.",
+      "Ao ocorrer login/logout/expiração de sessão para ajustar estado global e rotas."
+    ],
+    "inputs": [
+      {
+        "name": "SessionService",
+        "detail": "Estado de sessão (usuário, claims/roles, token, expiração) consumido via Access Layer."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Contexto ativo (tenant/cliente/projeto/ambiente) e mudanças reativas via Access Layer."
+      },
+      {
+        "name": "NavigationService",
+        "detail": "Árvore de navegação segura (menu/breadcrumbs) derivada de AccessDecision."
+      },
+      {
+        "name": "UI Layout (libs/ui-layout)",
+        "detail": "Componentes/slots base do layout do Hub (Topbar/Sidebar/RightPanel)."
+      },
+      {
+        "name": "NotificationService",
+        "detail": "Fonte agregada de notificações para o NotificationCenter."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Registro de eventos de bootstrap, erros globais e trocas de contexto."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Slots renderizados",
+        "detail": "Topbar/Sidebar/Content/RightPanel conforme UI Layout."
+      },
+      {
+        "name": "RouterOutlet no Content",
+        "detail": "Renderiza rotas do Shell e /tools/* (lazy) no slot Content."
+      },
+      {
+        "name": "Estados globais de UX",
+        "detail": "Loading inicial, erro global, acesso negado, indicadores no layout."
+      }
+    ],
+    "responsibilities": [
+      "Compor o layout do Hub e manter consistência visual/estrutural entre páginas e tools.",
+      "Orquestrar bootstrap (sequência de inicialização) sem assumir responsabilidades do Access Layer.",
+      "Renderizar menu/breadcrumbs exclusivamente a partir do NavigationService (não “montar menu” localmente).",
+      "Reagir a troca de contexto reconstruindo navegação e visibilidade sem recarregar a aplicação.",
+      "Não acessar HttpClient diretamente; toda comunicação deve estar em libs de data-access/infra."
+    ],
+    "dependencies": [
+      {
+        "name": "Router & ToolRoutes",
+        "why": "Outlet e convenções de rota do Shell e /tools/*."
+      },
+      {
+        "name": "Access Layer",
+        "why": "SessionService, ContextService, NavigationService (e indiretamente AccessDecision)."
+      },
+      {
+        "name": "Shared-Libs",
+        "why": "UI Layout, NotificationService, ObservabilityService, HttpClient + Interceptors (indireto via libs)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/shell/src/app/shell/app-shell/",
+      "files": [
+        {
+          "path": "app-shell.ts",
+          "purpose": "Orquestra bootstrap e conecta services ao template."
+        },
+        {
+          "path": "app-shell.html",
+          "purpose": "Define slots e outlets (layout do Hub)."
+        },
+        {
+          "path": "app-shell.scss",
+          "purpose": "Ajustes mínimos (tokens/tema)."
+        },
+        {
+          "path": "app-shell.spec.ts",
+          "purpose": "Testes: render, slots, reação a context change."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar o template com 4 slots (Topbar/Sidebar/Content/RightPanel) usando UI Layout (libs/ui-layout).",
+      "No init, restaurar sessão e contexto via SessionService/ContextService; aguardar “ready” antes de montar navegação.",
+      "Solicitar ao NavigationService a árvore inicial (menu/breadcrumbs) baseada no contexto e decisão.",
+      "Conectar navegação no Sidebar e usuário/contexto na Topbar.",
+      "Ao trocar contexto, invalidar e reconstruir menu/visibilidade (recalcular NavigationService e re-renderizar).",
+      "Garantir que o Content seja um router-outlet (inclui rotas lazy das ferramentas).",
+      "Integrar NotificationCenter no RightPanel e estado global (loading/erro/sem acesso)."
+    ],
+    "acceptanceCriteria": [
+      "Deve renderizar ErrorPageComponent em caso de falha crítica no bootstrap (bootstrap_error).",
+      "Slots renderizam corretamente (Topbar/Sidebar/Content/RightPanel).",
+      "Troca de contexto atualiza menu/visibilidade sem refresh.",
+      "Sem HttpClient direto no componente.",
+      "Sem leak de subscriptions (takeUntil/DestroyRef).",
+      "Testes mínimos cobrindo render + mudança de contexto."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Angular Layout & Composition",
+          "goal": "Dominar composição por slots + integração com serviços do Shell.",
+          "level": "Base",
+          "knowledge": [
+            "Standalone/Module + RouterOutlet e lazy routes",
+            "ChangeDetection e leaks (DestroyRef/takeUntil)",
+            "Bindings de menu/contexto e estado reativo"
+          ]
+        },
+        {
+          "title": "Contracts & Patterns do Hub",
+          "goal": "Implementar seguindo o contrato do Hub e padrões obrigatórios.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Padrão de inputs/outputs do componente",
+            "Erros padronizados e observabilidade (frontend)",
+            "Boundary rules / separação Shell vs Tool"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar o AppShellComponent seguindo a ficha técnica: slots (Topbar/Sidebar/Content/RightPanel), bootstrap de sessão/contexto, rebuild de menu ao trocar contexto, sem HttpClient direto. Entregar template + TS + testes mínimos.",
+      "generationSteps": [
+        "Gerar boilerplate (HTML/TS/SCSS/spec) na pasta sugerida.",
+        "Gerar wiring com SessionService/ContextService/NavigationService.",
+        "Gerar testes mínimos (render + troca de contexto).",
+        "Gerar checklist de PR e evidências mínimas."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Reexecução",
+        "Guided Build"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR com descrição do módulo + escopo explícito",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem atalhos: sem HttpClient direto no componente",
+        "Evidências anexadas conforme padrão do TechLab"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Print/registro do gate pass",
+        "Notas de decisão (se houve trade-off)",
+        "Evidência de comportamento (gif/prints ou roteiro de teste)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica)",
+        "Registro em playbook/guia (como usar / quando usar)",
+        "Promoção a asset (se aplicável) com versionamento"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não executar chamadas HTTP diretamente (sem HttpClient no componente).",
+      "Não avaliar permissões/flags/policies (não chamar PermissionService/PolicyEngine diretamente).",
+      "Não decidir visibilidade de menu/rotas localmente (não “montar menu” no componente).",
+      "Não conhecer detalhes internos de tools (rotas internas, estados ou APIs específicas das tools).",
+      "Não concentrar lógica de negócio: apenas orquestra bootstrap e composição de UI."
+    ],
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:shell"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/shell/jest.config.ts"
+      }
+    }
+  }
+}

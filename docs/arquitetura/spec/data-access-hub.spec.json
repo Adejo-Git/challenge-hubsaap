@@ -1,0 +1,188 @@
+{
+  "DataAccessHub": {
+    "kind": "frontend",
+    "key": "DataAccessHub",
+    "title": "DataAccessHub",
+    "summary": "Camada de data access do Hub: encapsula acesso a dados do domínio do Hub, gerencia estado/cache leve e expõe APIs reativas para Shell e Tools.",
+    "function": "Fornecer uma camada de acesso a dados específica do domínio do Hub (ex.: contexto, catálogo, preferências, drafts). Encapsula uso do api-clients-sdk, gerencia estado local/cache leve quando necessário e expõe streams reativos para consumo por componentes.",
+    "whenRuns": [
+      "No bootstrap do Shell (carregar dados iniciais do Hub).",
+      "Quando contexto muda e dados precisam ser recarregados.",
+      "Quando componentes solicitam dados do domínio do Hub."
+    ],
+    "inputs": [
+      {
+        "name": "ApiClientsSdk",
+        "detail": "Clients tipados para acessar APIs do backend."
+      },
+      {
+        "name": "Context snapshot",
+        "detail": "Contexto ativo para parametrizar chamadas."
+      },
+      {
+        "name": "ErrorModel",
+        "detail": "Propagação de StandardError para UI."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Reactive data streams",
+        "detail": "Observables/signals de dados do Hub."
+      },
+      {
+        "name": "Domain APIs",
+        "detail": "Métodos semânticos (loadCatalog, saveDraft, etc.)."
+      },
+      {
+        "name": "Cached state",
+        "detail": "Cache leve/in-memory quando aplicável."
+      }
+    ],
+    "responsibilities": [
+      "Encapsular chamadas ao backend do domínio do Hub.",
+      "Gerenciar estado e cache leve (in-memory) quando fizer sentido.",
+      "Expor APIs reativas para consumo por UI.",
+      "Reagir a mudanças de contexto recarregando dados.",
+      "Propagar erros normalizados para a camada de UI."
+    ],
+    "nonResponsibilities": [
+      "Não fazer chamadas HTTP diretas (usar api-clients-sdk).",
+      "Não conter lógica de UI.",
+      "Não implementar autorização (isso é access-decision).",
+      "Não persistir estado complexo/offline.",
+      "Não misturar domínios de outras tools."
+    ],
+    "dependencies": [
+      {
+        "name": "api-clients-sdk",
+        "why": "Acesso HTTP tipado e padronizado."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados para UI."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Eventos mínimos de load/fail por domínio."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/data-access-hub/src/lib/",
+      "files": [
+        {
+          "path": "data-access-hub.service.ts",
+          "purpose": "APIs de acesso a dados do Hub."
+        },
+        {
+          "path": "data-access-hub.state.ts",
+          "purpose": "Estado/cache in-memory (signals/observables)."
+        },
+        {
+          "path": "data-access-hub.model.ts",
+          "purpose": "Modelos de domínio do Hub."
+        },
+        {
+          "path": "data-access-hub.spec.ts",
+          "purpose": "Testes: load, cache, erro, reação a context change."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir modelos de domínio do Hub.",
+      "Criar service que consome api-clients-sdk.",
+      "Implementar estado reativo e cache leve.",
+      "Integrar com contexto para reload automático.",
+      "Criar testes mínimos."
+    ],
+    "acceptanceCriteria": [
+      "UI consome dados via data-access-hub, não via clients diretos.",
+      "Cache leve funciona e invalida em context change.",
+      "Erros são StandardError.",
+      "Sem HttpClient direto.",
+      "Testes mínimos cobrindo fluxo principal."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Data Access Layer (Frontend)",
+          "goal": "Separar acesso a dados de UI e transporte.",
+          "level": "Base",
+          "knowledge": [
+            "Services reativos",
+            "Cache in-memory",
+            "Integração com contexto"
+          ]
+        },
+        {
+          "title": "Domain-Oriented Data Access",
+          "goal": "Modelar data-access por domínio.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Boundary rules",
+            "Erro padronizado",
+            "Testabilidade"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar data-access-hub: service reativo que consome api-clients-sdk, gerencia estado/cache leve, reage a context change e propaga StandardError. Entregar models + testes mínimos.",
+      "generationSteps": [
+        "Criar models do domínio.",
+        "Criar service e estado reativo.",
+        "Integrar com api-clients-sdk.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Data Access"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta APIs de domínio expostas",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient direto",
+        "Testes cobrindo cache e erro"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: componente consome stream do data-access-hub"
+      ],
+      "provided": [
+        "unit-tests: npx nx test data-access-hub --runInBand --skip-nx-cache => PASS (4 tests)",
+        "files-changed: libs/data-access-hub/src/lib/data-access-hub.service.ts, libs/data-access-hub/src/lib/data-access-hub.state.ts, libs/data-access-hub/src/lib/data-access-hub.spec.ts, libs/data-access-hub/project.json",
+        "notes: PR link / CI gate / demo not created here; please open PR with above changes and attach CI output and demo snippet"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do data-access-hub)",
+        "Guia: quando criar novo data-access-*"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:data-access-hub",
+        "platform:frontend"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/data-access-hub/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

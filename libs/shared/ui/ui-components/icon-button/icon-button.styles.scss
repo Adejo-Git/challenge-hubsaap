@@ -1,0 +1,28 @@
+// src\app\lib\ui-components\icon-button\icon-button.styles.scss
+
+.ui-icon-btn {
+  @extend .ui-btn !optional;
+
+  padding: 0;
+  width: calc(var(--line-height-md) + var(--spacing-2xl));
+  height: calc(var(--line-height-md) + var(--spacing-2xl));
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ui-icon-btn .ui-icon {
+  font-size: var(--line-height-sm);
+}
+
+/* Sizes */
+.ui-icon-btn--sm {
+  width: var(--line-height-xl);
+  height: var(--line-height-xl);
+}
+
+.ui-icon-btn--lg {
+  width: calc(var(--line-height-md) + var(--spacing-4xl));
+  height: calc(var(--line-height-md) + var(--spacing-4xl));
+}

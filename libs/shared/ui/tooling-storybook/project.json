@@ -1,0 +1,53 @@
+{
+  "name": "tooling-storybook",
+  "root": "libs/shared/ui/tooling-storybook",
+  "sourceRoot": "libs/shared/ui/tooling-storybook/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/shared/ui/tooling-storybook --ext .ts,.tsx,.js"
+      }
+    }
+    ,
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/shared/ui/tooling-storybook/jest.config.ts"
+      }
+    }
+    ,
+    "storybook": {
+      "executor": "@nx/storybook:storybook",
+      "options": {
+        "browserTarget": "tooling-storybook:build",
+        "angularBrowserTarget": "shell:build",
+        "tsConfig": "apps/shell/tsconfig.app.json",
+        "config": {
+          "configFolder": "libs/shared/ui/tooling-storybook/.storybook"
+        },
+        "configDir": "libs/shared/ui/tooling-storybook/.storybook",
+        "staticDirs": [],
+        "outputDir": "C:\\Temp\\storybook\\tooling-storybook",
+        "port": 4400
+      }
+    },
+    "build-storybook": {
+      "executor": "@nx/storybook:build",
+      "options": {
+        "config": {
+          "configFolder": "libs/shared/ui/tooling-storybook/.storybook"
+        },
+        "configDir": "libs/shared/ui/tooling-storybook/.storybook",
+        "staticDirs": [],
+        "outputPath": "C:\\Temp\\storybook\\tooling-storybook",
+        "outputDir": "C:\\Temp\\storybook\\tooling-storybook",
+        "angularBrowserTarget": "shell:build",
+        "tsConfig": "apps/shell/tsconfig.app.json"
+      }
+    }
+  },
+  "tags": ["type:tooling", "scope:tooling"]
+}

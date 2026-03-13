@@ -1,0 +1,189 @@
+{
+  "PolicyEngine": {
+    "kind": "frontend",
+    "key": "PolicyEngine",
+    "title": "PolicyEngine",
+    "summary": "Engine leve de policies no frontend (ABAC): avalia regras declarativas por contexto (ex.: exige projeto ativo) e retorna allow/deny com reason codes para access-decision.",
+    "function": "Avaliar políticas declarativas no frontend, usando atributos do contexto (tenant/cliente/projeto/ambiente) e, opcionalmente, atributos do usuário (claims mínimas). Fornece resultado tipado (allow/deny + reason) para access-decision, permitindo bloquear rotas/ações por pré-condições de contexto sem espalhar “ifs” pelo código.",
+    "whenRuns": [
+      "Quando access-decision compõe decisão final (após flags/RBAC).",
+      "Quando rota exige pré-condição de contexto (ex.: projeto selecionado).",
+      "Quando tool declara requirements contextuais (ex.: precisa de cliente + unidade).",
+      "Quando contexto muda e precisa revalidar decisões."
+    ],
+    "inputs": [
+      {
+        "name": "Context snapshot",
+        "detail": "Atributos mínimos do contexto (ids e “presence” flags) para avaliação."
+      },
+      {
+        "name": "Safe session snapshot",
+        "detail": "Claims mínimas se necessário para algumas policies (sem PII/tokens)."
+      },
+      {
+        "name": "Policy definitions",
+        "detail": "Políticas declarativas (ex.: requiresProject, requiresTenant, envIsProd) por target."
+      },
+      {
+        "name": "Tool requirements (opcional)",
+        "detail": "Requisitos declarados no contrato (ToolPermissionMap/metadata) ou registry."
+      },
+      {
+        "name": "PolicyResult",
+        "detail": "allow/deny + policyId + reason code + details safe."
+      },
+      {
+        "name": "API",
+        "detail": "evaluate(target, context, session), evaluateAll(policies)."
+      },
+      {
+        "name": "Reason codes",
+        "detail": "contextMissing/projectRequired/envMismatch/etc. para mapeamento UX."
+      }
+    ],
+    "responsibilities": [
+      "Executar avaliação de policies de forma determinística e testável.",
+      "Manter policies declarativas e simples (evitar engine complexa).",
+      "Retornar reason codes padronizados para access-decision/guards mapearem 403/404/empty states.",
+      "Permitir composição de múltiplas policies por target.",
+      "Manter payload safe (sem dados sensíveis)."
+    ],
+    "nonResponsibilities": [
+      "Não substituir RBAC (isso é permission-rbac).",
+      "Não implementar regras de negócio profundas da tool (somente pré-condições de acesso/entrada/execução).",
+      "Não fazer IO/HTTP.",
+      "Não renderizar UI.",
+      "Não virar DSL complexa; evitar over-engineering."
+    ],
+    "dependencies": [
+      {
+        "name": "error-model",
+        "why": "Erros padronizados: policyConfigInvalid, unknownPolicyId (dev)."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Eventos mínimos: policy.deny com policyId/reason (sem dados sensíveis)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/policy-engine/src/lib/",
+      "files": [
+        {
+          "path": "policy-engine.service.ts",
+          "purpose": "API evaluate/evaluateAll; executa policies declarativas."
+        },
+        {
+          "path": "policy-engine.model.ts",
+          "purpose": "Tipos: PolicyId, PolicyResult, PolicyReason, PolicyTarget."
+        },
+        {
+          "path": "policies/",
+          "purpose": "Implementações declarativas simples (requiresProject, requiresTenant, envIsProd, etc.)."
+        },
+        {
+          "path": "policy-engine.util.ts",
+          "purpose": "Helpers: composição, normalização, debug-safe details."
+        },
+        {
+          "path": "policy-engine.spec.ts",
+          "purpose": "Testes: policies básicas e composição; determinismo por contexto."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir PolicyId e PolicyReason codes padronizados.",
+      "Criar policies básicas reutilizáveis (requiresTenant/requiresClient/requiresProject/envIsProdOnly etc.).",
+      "Implementar PolicyEngineService: evaluate(target, policies, ctx, session) retornando PolicyResult.",
+      "Permitir composição: evaluateAll retorna primeiro deny (ou lista) conforme padrão definido.",
+      "Integrar com observability para registrar denies com policyId/reason (sem dados sensíveis).",
+      "Criar testes mínimos cobrindo policies básicas e composição."
+    ],
+    "acceptanceCriteria": [
+      "Policies são avaliadas deterministicamente e retornam PolicyResult tipado.",
+      "AccessDecision consegue compor policy-engine junto com flags/RBAC.",
+      "Reason codes são padronizados e úteis para UX e guards.",
+      "Sem IO/HttpClient.",
+      "Testes mínimos cobrem policies básicas e composição."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "ABAC Policies (Frontend, Lightweight)",
+          "goal": "Criar policies simples por contexto e reason codes rastreáveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Pré-condições de contexto (requiresX)",
+            "Reason codes e determinismo",
+            "Composição e testabilidade"
+          ]
+        },
+        {
+          "title": "Governance: Avoid Policy Over-Engineering",
+          "goal": "Manter engine pequena e evitar DSL complexa.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Limites do escopo (pré-condições, não regras de negócio)",
+            "Padrões de composição (first deny vs lista completa)",
+            "Evolução segura das policies"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar policy-engine: service evaluate/evaluateAll com policies declarativas simples (requiresTenant/client/project/env), retornando PolicyResult com reason codes padronizados e detalhes safe, integração mínima com observability e testes mínimos.",
+      "generationSteps": [
+        "Criar models (PolicyId, PolicyReason, PolicyResult).",
+        "Criar policies básicas em pasta /policies.",
+        "Criar service com composição e determinismo.",
+        "Adicionar util de debug-safe details.",
+        "Criar testes mínimos de policies e composição."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta lista de policies e reason codes",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem DSL complexa/over-engineering",
+        "Testes cobrindo policies básicas e composição"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: negar acesso por contextMissing (requiresProject) e reason aparece",
+        "Notas de decisão (first deny vs lista completa)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do policy-engine)",
+        "Guia: quando usar policy vs permission vs flag",
+        "Playbook: troubleshooting (contextMissing, policy denies inesperados)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "type:access"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/policy-engine/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

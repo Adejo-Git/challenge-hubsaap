@@ -1,0 +1,191 @@
+{
+  "AuthGuard": {
+    "kind": "frontend",
+    "key": "AuthGuard",
+    "title": "AuthGuard",
+    "summary": "Guard de autenticação do Hub: bloqueia rotas quando não há sessão válida e conduz o usuário para o fluxo de login/callback.",
+    "function": "Garantir que rotas protegidas do Shell e /tools/* só sejam acessadas quando houver sessão válida. Quando não autenticado (ou token expirado sem refresh possível), direciona para o fluxo de login e preserva a URL de retorno (returnUrl). Integra-se ao SessionService para validar/restaurar sessão e expõe comportamento previsível (allow/deny) para o Router.",
+    "whenRuns": [
+      "Ao navegar para rotas protegidas do Shell.",
+      "Ao tentar acessar /tools/* diretamente por URL (prevenção de bypass).",
+      "Ao inicializar o app com sessão restaurável (storage) para validar antes de liberar a rota.",
+      "Ao detectar expiração/invalidade de sessão durante navegação."
+    ],
+    "inputs": [
+      {
+        "name": "SessionService",
+        "detail": "Fonte única do estado de autenticação (isAuthenticated, token válido, refresh/restore, claims básicas)."
+      },
+      {
+        "name": "Angular Router",
+        "detail": "Navegação/redirect para login/callback e preservação de returnUrl."
+      },
+      {
+        "name": "ActivatedRouteSnapshot / RouterStateSnapshot",
+        "detail": "Rota alvo e URL pretendida para retorno após login."
+      },
+      {
+        "name": "ConfigService (runtime)",
+        "detail": "Parâmetros do IdP/OIDC (endpoints, clientId, redirectUri), quando aplicável."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "allow/deny (boolean/UrlTree)",
+        "detail": "Libera a navegação quando autenticado; caso contrário retorna UrlTree para login (ou rota de sessão expirada)."
+      },
+      {
+        "name": "redirect de login",
+        "detail": "Dispara navegação para login/callback com returnUrl preservado."
+      },
+      {
+        "name": "telemetria de decisão",
+        "detail": "Eventos mínimos de “auth-allow/auth-deny” para observabilidade (sem dados sensíveis)."
+      }
+    ],
+    "responsibilities": [
+      "Bloquear rotas protegidas quando não há sessão válida.",
+      "Preservar e restaurar a URL alvo (returnUrl) no fluxo de login.",
+      "Tentar restaurar/validar sessão via SessionService antes de negar (quando existir sessão persistida).",
+      "Garantir comportamento determinístico: sem “meio acesso” (ou libera, ou redireciona).",
+      "Manter integração simples com o Router (retornar boolean ou UrlTree, sem side effects excessivos)."
+    ],
+    "nonResponsibilities": [
+      "Não autorizar ações/recursos (isso é responsabilidade do Route Guards + AccessDecisionService).",
+      "Não implementar regras RBAC/ABAC/policies.",
+      "Não fazer chamadas HTTP diretas (sem HttpClient no guard).",
+      "Não armazenar tokens diretamente (delegar para SessionService/StorageService).",
+      "Não “logar” dados sensíveis (tokens/claims completas) em observabilidade."
+    ],
+    "dependencies": [
+      {
+        "name": "SessionService (Access Layer)",
+        "why": "Validação/restauração/expiração e estado autenticado."
+      },
+      {
+        "name": "StorageService (Shared-Libs)",
+        "why": "Persistência segura de artefatos de sessão (indireto via SessionService)."
+      },
+      {
+        "name": "Router & ToolRoutes",
+        "why": "Guarda rotas do Shell e /tools/* com padrão único."
+      },
+      {
+        "name": "ObservabilityService (Shared-Libs)",
+        "why": "Registro mínimo de eventos (allow/deny) e correlação."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/shell/src/app/shell/auth/auth-guard/",
+      "files": [
+        {
+          "path": "auth-guard.ts",
+          "purpose": "Implementa canActivate/canMatch; consulta SessionService e retorna UrlTree/boolean."
+        },
+        {
+          "path": "auth-guard.spec.ts",
+          "purpose": "Testes: permite quando autenticado; redireciona quando não; preserva returnUrl."
+        },
+        {
+          "path": "auth-redirect.util.ts",
+          "purpose": "Helpers para montar UrlTree de login/callback e normalizar returnUrl."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Implementar AuthGuard como CanActivate (e CanMatch para lazy routes, se aplicável).",
+      "Ao executar: consultar SessionService.isAuthenticated().",
+      "Se não autenticado: tentar SessionService.restoreOrRefresh() (quando existir sessão persistida).",
+      "Se autenticado após restore/refresh: liberar rota.",
+      "Se não autenticado: retornar UrlTree para rota de login/callback com returnUrl = state.url.",
+      "Registrar evento mínimo de decisão (allow/deny) no ObservabilityService sem dados sensíveis.",
+      "Cobrir com testes: authenticated, not authenticated, restore success, restore fail, returnUrl preservado."
+    ],
+    "acceptanceCriteria": [
+      "Rotas protegidas não abrem sem sessão válida.",
+      "Ao negar, redireciona para login/callback preservando returnUrl.",
+      "Se sessão persistida puder ser restaurada, a rota é liberada sem intervenção do usuário.",
+      "Sem HttpClient direto no guard.",
+      "Sem leaks/loops de navegação (não ficar redirecionando infinitamente).",
+      "Testes mínimos cobrindo cenários principais (allow/deny/restore)."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Angular Guards & Router Control",
+          "goal": "Implementar guards previsíveis e seguros (CanActivate/CanMatch) com UrlTree e returnUrl.",
+          "level": "Base",
+          "knowledge": [
+            "CanActivate vs CanMatch (lazy routes)",
+            "UrlTree e navegação segura",
+            "Evitar loops e estados intermediários"
+          ]
+        },
+        {
+          "title": "Sessão & Segurança no Frontend",
+          "goal": "Integrar com SessionService e padrões de segurança sem expor dados sensíveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Fluxo OIDC (conceitos) e redirect/callback",
+            "Storage seguro e lifecycle de sessão",
+            "Telemetria segura (sem tokens/claims completas)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar AuthGuard do Hub: CanActivate/CanMatch, consulta SessionService (isAuthenticated + restore/refresh), retorna UrlTree para login/callback com returnUrl, registra evento mínimo em ObservabilityService, sem HttpClient direto. Entregar TS + testes.",
+      "generationSteps": [
+        "Gerar boilerplate (auth-guard.ts, util de redirect, spec).",
+        "Implementar lógica allow/deny + restore/refresh via SessionService.",
+        "Implementar returnUrl normalizado e prevenção de loop.",
+        "Criar testes mínimos (allow/deny/restore).",
+        "Gerar checklist de PR e evidências mínimas."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR descreve rotas impactadas e comportamento de fallback",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient no guard; SessionService é a fonte única",
+        "Sem logs sensíveis (token/claims completas)",
+        "Cenários de loop validados (não entra em redirect infinito)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass (build/lint/tests)",
+        "Roteiro de teste (sem login → redirect; login → returnUrl; restore ok/fail)",
+        "Print/gif do fluxo (opcional) ou notas de validação"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do AuthGuard)",
+        "Guia rápido: como proteger rotas do Shell e /tools/* (padrão do Hub)",
+        "Playbook: troubleshooting de redirect/returnUrl/loops"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:shell"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/shell/jest.config.ts"
+      }
+    }
+  }
+}

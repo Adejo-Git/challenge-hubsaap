@@ -1,0 +1,190 @@
+{
+  "NxBoundaryRules": {
+    "kind": "frontend",
+    "key": "NxBoundaryRules",
+    "title": "NxBoundaryRules",
+    "summary": "Fonte de verdade das regras Nx (tags + depConstraints) para garantir separação Shell/Tools/Shared/Access/Domain/Contracts.",
+    "function": "Especificação de governança arquitetural que define: (1) taxonomia de tags Nx (type:* e scope:*), (2) regras de dependência permitidas (depConstraints), (3) padrões obrigatórios para evitar importações diretas proibidas. Serve como contrato entre Blueprint + Specs + lint (enforce-module-boundaries), garantindo que o projeto compile e que “corrigir quebrando boundary” não seja aceito.",
+    "whenRuns": [
+      "Durante lint/CI (enforce-module-boundaries) para validar imports e tags.",
+      "Durante revisão de PR para avaliar se novas libs respeitam o modelo de camadas.",
+      "Durante auditoria de Specs para inferir tags e validar direção de dependências.",
+      "Quando uma nova Tool/Shared-lib é criada e precisa de tags e regras claras."
+    ],
+    "inputs": [
+      {
+        "name": "Blueprint de Arquitetura",
+        "detail": "Camadas, responsabilidades e padrões (Shell, Tool, Shared, Access, Domain, Contract)."
+      },
+      {
+        "name": "Mindmap de Relacionamentos",
+        "detail": "Quem consome quem (arestas) para validar direção e identificar abstrações faltantes."
+      },
+      {
+        "name": "Component Specs",
+        "detail": "Fonte de verdade para inferir tags, dependências e permitir auditoria determinística."
+      },
+      {
+        "name": "Nx enforce-module-boundaries",
+        "detail": "Regra ativa no lint que deve refletir exatamente este contrato."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Taxonomia de tags Nx",
+        "detail": "Lista canônica de tags: type:* e scope:* usadas em libs/apps."
+      },
+      {
+        "name": "DepConstraints canônicas",
+        "detail": "Regras do que cada tag pode depender (permit/deny), alinhadas ao Blueprint."
+      },
+      {
+        "name": "Guia de exceções proibidas",
+        "detail": "Lista de “anti-patterns” (ex.: Tool → Shell, Shared → Tool/Shell/UI)."
+      },
+      {
+        "name": "Checklist de criação de lib",
+        "detail": "Como taguear e validar uma nova lib sem quebrar boundaries."
+      }
+    ],
+    "responsibilities": [
+      "Definir tags Nx mínimas e suficientes para representar o Blueprint.",
+      "Definir constraints explícitas e testáveis (depConstraints) para enforce-module-boundaries.",
+      "Proibir dependências perigosas: Tool → Shell, Shared → Tool/Shell/UI, Domain → UI, etc.",
+      "Orientar a criação de abstrações quando necessário (contracts/facades/shared-libs) em vez de “import direto”.",
+      "Garantir rastreabilidade: cada Spec deve permitir inferir tags Nx e dependências permitidas."
+    ],
+    "dependencies": [
+      {
+        "name": "Blueprint",
+        "why": "Fonte primária do modelo de camadas e responsabilidades."
+      },
+      {
+        "name": "Mindmap",
+        "why": "Fonte de relacionamentos para validar direção e descobrir abstrações faltantes."
+      },
+      {
+        "name": "Specs",
+        "why": "Fonte de verdade do inventário e dependências declaradas."
+      },
+      {
+        "name": "Nx/ESLint config",
+        "why": "Materialização das regras no pipeline (sem desativar enforcement)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/tool/governance/src/lib/",
+      "files": [
+        {
+          "path": "nx-boundary-rules.md",
+          "purpose": "Documento canônico de tags e constraints (human-readable)."
+        },
+        {
+          "path": "nx-tags.catalog.json",
+          "purpose": "Catálogo de tags (type/scope) e descrições (machine-readable opcional)."
+        },
+        {
+          "path": "dep-constraints.catalog.json",
+          "purpose": "Regras canônicas para validação automática/auditoria."
+        },
+        {
+          "path": "eslint-boundaries.snippet.json",
+          "purpose": "Snippet/espelho das constraints para aplicar no eslint config."
+        },
+        {
+          "path": "audit-checklist.md",
+          "purpose": "Checklist de PR e de criação de libs/apps."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Listar tags canônicas necessárias: type:ui, type:access, type:domain, type:contracts, type:shared, type:shell e scope:shell, scope:tool, scope:shared.",
+      "Definir regras base (exemplos): UI → Access + Shared; Access → Domain + Contract + Shared; Domain → Contract + Shared (sem UI); Shared → Shared apenas; Tool → Shared + Contract + UI (somente dentro do escopo tool); Shell → Access + Shared (orquestra).",
+      "Formalizar proibições explícitas: Tool não depende de Shell; Shared não depende de Tool/Shell/UI; Domain não depende de UI.",
+      "Definir como tratar “adapters/facades": ToolContextAdapter é o ponto único permitido para Tool receber contexto, evitando Tool → Access.",
+      "Criar checklist para novas libs: nome, pasta, tags Nx, exports públicos e teste de boundary.",
+      "Garantir que o documento canônico esteja alinhado com o que está no eslint (sem drift)."
+    ],
+    "acceptanceCriteria": [
+      "Existe um documento canônico com tags e depConstraints compreensíveis e auditáveis.",
+      "As regras refletem o Blueprint e impedem violações críticas (Tool→Shell, Shared→UI/Tool/Shell, Domain→UI).",
+      "Cada Spec crítica (Shell/Tools/Access/Shared) consegue inferir tags Nx sugeridas sem ambiguidade.",
+      "Mudanças em regras exigem atualização do documento + snippet (evitar drift).",
+      "NUNCA sugere desativar enforce-module-boundaries como solução."
+    ],
+    "complexity": 1,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 2
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Nx Module Boundaries (Governança)",
+          "goal": "Transformar arquitetura em regras executáveis (lint) e contratos auditáveis.",
+          "level": "Base",
+          "knowledge": [
+            "Tags Nx (type/scope) e depConstraints",
+            "Anti-patterns e como criar abstrações (contracts/facades)",
+            "Rastreabilidade Blueprint ↔ Specs ↔ ESLint"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar NxBoundaryRules como documentação e catálogo (tags + depConstraints) alinhado ao Blueprint do Hub-Saap, incluindo anti-patterns e checklist de criação de libs.",
+      "generationSteps": [
+        "Gerar taxonomia de tags e descrições.",
+        "Gerar depConstraints canônicas (permit/deny) alinhadas ao Blueprint.",
+        "Gerar lista de violações proibidas e exemplos de correção (via contracts/facades).",
+        "Gerar checklist e snippet espelho para eslint config."
+      ],
+      "tags": [
+        "Governance",
+        "Nx boundaries",
+        "Contract-first",
+        "No shortcuts"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "Documento canônico revisado e alinhado ao Blueprint",
+        "Constraints explícitas e testáveis (sem “depende do time lembrar")",
+        "Inclui proibições e exemplos de correção sem quebrar boundary",
+        "Definição clara de adapters/facades obrigatórios (ex.: ToolContextAdapter)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "PR com documento + catálogos",
+        "Registro de revisão (arquitetura/infra)",
+        "Exemplos de “violação comum” e “correção arquitetural” documentados",
+        "Checklist aplicado em pelo menos 1 criação/ajuste de lib"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Playbook: como criar libs/apps com tags corretas",
+        "Catálogo de tags e constraints versionado",
+        "Guia de resolução de violations (sem desativar enforcement)"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não implementar código de features do produto.",
+      "Não permitir exceções “porque funciona”.",
+      "Não substituir o Blueprint: apenas o materializa em regras executáveis.",
+      "Não decidir arquitetura por preferência; deve refletir o contrato do Hub-Saap."
+    ],
+    "nx": {
+      "tags": [
+        "type:tooling",
+        "scope:platform"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": null
+      }
+    }
+  }
+}

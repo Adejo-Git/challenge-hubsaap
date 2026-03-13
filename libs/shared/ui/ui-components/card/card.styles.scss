@@ -1,0 +1,64 @@
+// src\app\lib\ui-components\card\card.styles.scss
+
+.ui-card {
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+
+  border: calc(var(--spacing-xs) / 4) solid var(--color-border-default);
+
+  display: block;
+
+  transition:
+    box-shadow var(--accessibility-motionBase) ease,
+    transform var(--accessibility-motionBase) ease;
+}
+
+/* =====================
+   VARIANTS
+===================== */
+
+.ui-card--default {
+  box-shadow: none;
+}
+
+.ui-card--outlined {
+  box-shadow: none;
+  border-color: var(--color-border-muted);
+}
+
+.ui-card--elevated {
+  border-color: transparent;
+  box-shadow: var(--shadow-md);
+}
+
+/* =====================
+   PADDING
+===================== */
+
+.ui-card--sm {
+  padding: var(--spacing-sm);
+}
+
+.ui-card--md {
+  padding: var(--spacing-md);
+}
+
+.ui-card--lg {
+  padding: var(--spacing-lg);
+}
+
+/* =====================
+   STATES (opcional)
+===================== */
+
+.ui-card--interactive {
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(calc(var(--spacing-xs) / -2));
+    box-shadow: var(--shadow-lg);
+  }
+}

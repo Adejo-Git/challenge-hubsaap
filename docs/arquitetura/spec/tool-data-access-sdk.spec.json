@@ -1,0 +1,205 @@
+{
+  "ToolDataAccessSdk": {
+    "kind": "frontend",
+    "key": "ToolDataAccessSdk",
+    "title": "ToolDataAccessSdk",
+    "summary": "SDK padronizado de acesso a dados para Tools: encapsula clientes, contratos e interceptores para consumir APIs/BFF sem HttpClient direto em componentes.",
+    "function": "Fornecer uma camada reutilizável para tools consumirem dados (BFF/APIs) via clients tipados, com interceptores, tratamento de erro padronizado e observabilidade. Reduz duplicação entre tools e impede que componentes façam IO direto, mantendo boundary rules (UI vs data-access).",
+    "whenRuns": [
+      "Quando serviços internos da tool precisam buscar/salvar dados (ex.: carregar workspace, salvar evidências).",
+      "Quando a tool executa ações que exigem chamadas ao backend/BFF.",
+      "Quando interceptores aplicam headers de sessão/contexto/correlação em requests.",
+      "Quando ocorre erro de rede/validação e o SDK aplica erro padronizado e telemetria."
+    ],
+    "inputs": [
+      {
+        "name": "HttpClient + Interceptors",
+        "detail": "Base de transporte Angular; interceptores injetam sessão/contexto/correlação."
+      },
+      {
+        "name": "Session/Context snapshot",
+        "detail": "Dados mínimos (ids/headers) para enriquecer requisições (via interceptors/adapters)."
+      },
+      {
+        "name": "Endpoints config",
+        "detail": "Config runtime (baseUrl por ambiente, rotas BFF por tool)."
+      },
+      {
+        "name": "DTO Contracts",
+        "detail": "Tipos/contratos (request/response) versionáveis por domínio da tool."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Typed clients",
+        "detail": "Clients por recurso (ex.: WorkspaceClient, EvidenceClient) com métodos tipados."
+      },
+      {
+        "name": "Standard errors",
+        "detail": "Erros padronizados (categoria, code, message, correlationId) para UI reagir."
+      },
+      {
+        "name": "Telemetry hooks",
+        "detail": "Telemetria de requests (latência, erro, status) via ObservabilityService."
+      }
+    ],
+    "responsibilities": [
+      "Encapsular acesso a dados em clients/serviços (nunca no componente).",
+      "Padronizar tratamento de erro (mapeamento HTTP → domain error) e correlação.",
+      "Padronizar headers/context enrichment (via interceptors) sem duplicação por tool.",
+      "Permitir evolução por tool (sub-módulos/clients específicos) mantendo padrões comuns.",
+      "Evitar acoplamento com UI: expor Observables/Promises tipados, não componentes."
+    ],
+    "nonResponsibilities": [
+      "Não renderizar UI nem decidir UX (isso é componente/camada UI).",
+      "Não implementar cache complexo sem evidência (evitar over-engineering).",
+      "Não concentrar regra de negócio (somente tradução e transporte).",
+      "Não substituir o BFF: SDK é cliente, não orquestrador backend.",
+      "Não expor HttpClient cru para camadas acima (somente via clients)."
+    ],
+    "dependencies": [
+      {
+        "name": "HttpClient + Interceptors (Shared-Libs)",
+        "why": "Transporte e enriquecimento de requisições com sessão/contexto/correlação."
+      },
+      {
+        "name": "ObservabilityService (Shared-Libs)",
+        "why": "Telemetria de chamadas (latência, erro, status) e correlação."
+      },
+      {
+        "name": "Runtime Config (Shared-Libs)",
+        "why": "BaseUrls e endpoints por ambiente para tools."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/tool/tool-data-access-sdk/src/lib/",
+      "files": [
+        {
+          "path": "clients/",
+          "purpose": "Clients tipados por recurso/domínio (ex.: workspace.client.ts, evidence.client.ts)."
+        },
+        {
+          "path": "models/",
+          "purpose": "DTOs e contratos versionáveis (request/response, erros padronizados)."
+        },
+        {
+          "path": "errors/",
+          "purpose": "Normalização de erros e tipos (ToolDataError, categories, codes)."
+        },
+        {
+          "path": "interceptors/",
+          "purpose": "Interceptors comuns (correlation, context headers) se não forem globais."
+        },
+        {
+          "path": "tool-data-access-sdk.module.ts",
+          "purpose": "Providers/configuração do SDK (baseUrl, adapters)."
+        },
+        {
+          "path": "index.ts",
+          "purpose": "Barrel exports dos clients e modelos."
+        },
+        {
+          "path": "tool-data-access-sdk.spec.ts",
+          "purpose": "Testes: error mapping, client calls (mock HttpTestingController)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar uma lib `tool-data-access-sdk` com estrutura por clients e models.",
+      "Definir padrão de client: métodos tipados retornando Observables e usando HttpClient internamente.",
+      "Implementar normalização de erro: mapear HTTP/network/timeout para ToolDataError com correlationId.",
+      "Integrar telemetria: interceptar chamadas para medir latência e registrar erros via ObservabilityService.",
+      "Configurar runtime baseUrl por ambiente e por tool (sem hardcode).",
+      "Garantir que componentes não importem HttpClient diretamente; somente consumam clients/serviços do SDK.",
+      "Criar testes mínimos com HttpTestingController para 2 casos: success e error mapping."
+    ],
+    "acceptanceCriteria": [
+      "Tools conseguem consumir APIs/BFF via clients tipados sem usar HttpClient em componentes.",
+      "Headers de sessão/contexto/correlação são aplicados consistentemente (via interceptors/adapters).",
+      "Erros são padronizados (ToolDataError) e incluem correlação.",
+      "Telemetria de chamadas é registrada (latência/erro/status) sem dados sensíveis.",
+      "Testes mínimos cobrindo chamadas e mapeamento de erro."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 5,
+      "finalizationDays": 6
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Typed API Clients in Angular",
+          "goal": "Construir clients tipados e testáveis usando HttpClient + HttpTestingController.",
+          "level": "Base",
+          "knowledge": [
+            "HttpClient patterns e observables",
+            "HttpTestingController e mocks",
+            "DTO contracts e versionamento"
+          ]
+        },
+        {
+          "title": "Standard Error Handling & Telemetry",
+          "goal": "Padronizar erros e integrar observabilidade sem vazar dados sensíveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Error normalization e categorias",
+            "Correlação (correlationId) e headers",
+            "Telemetria de latência/erro/status"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar Tool Data-Access SDK (shared lib): estrutura clients/models/errors, clients tipados usando HttpClient, mapeamento de erro para ToolDataError com correlationId, telemetria via ObservabilityService, runtime config de baseUrl, e testes mínimos com HttpTestingController.",
+      "generationSteps": [
+        "Gerar estrutura de lib e barrel exports.",
+        "Criar modelos DTO e ToolDataError.",
+        "Criar 1-2 clients exemplo com métodos tipados.",
+        "Implementar error mapping + telemetria hooks.",
+        "Criar testes mínimos (success + error mapping)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Data Access"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta padrão de client e contrato de erro",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Componentes não importam HttpClient (enforced por boundary rules)",
+        "Telemetria sem dados sensíveis",
+        "Testes mínimos com HttpTestingController"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: uma tool chama client e recebe dados + erro padronizado",
+        "Notas de decisão (o que entra no SDK comum vs específico por tool)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do Tool Data-Access SDK)",
+        "Guia: como criar um client novo (padrão + testes)",
+        "Playbook: troubleshooting (erro padronizado, correlação, headers)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:tool"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/tool-data-access-sdk/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

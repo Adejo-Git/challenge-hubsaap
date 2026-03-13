@@ -1,0 +1,23 @@
+{
+  "name": "tool-data-access-sdk",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/tool/tool-data-access-sdk/src",
+  "prefix": "hub",
+  "projectType": "library",
+  "tags": ["type:shared", "type:data-access", "scope:platform"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/tool/tool-data-access-sdk/jest.config.js"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/tool/tool-data-access-sdk/src --ext .ts"
+      }
+    }
+  }
+}

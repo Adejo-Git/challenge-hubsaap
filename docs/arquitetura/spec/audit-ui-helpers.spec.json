@@ -1,0 +1,208 @@
+{
+  "AuditUiHelpers": {
+    "kind": "frontend",
+    "key": "AuditUiHelpers",
+    "title": "AuditUiHelpers",
+    "summary": "Shared-lib utilitária para auditoria no frontend: mapeia eventos técnicos/ações do usuário em registros exibíveis (timeline), gera evidências leves (roteiros/prints) e padroniza metadados para rastreabilidade.",
+    "function": "Fornecer helpers de UI para auditoria e evidência: criar “AuditEvent” leve no frontend (não oficial), normalizar metadados (toolKey, entityRef, actionKey, correlationId), mapear para TimelineItem (patterns-timeline) e apoiar telas que precisam exibir histórico/atividades. Não substitui auditoria de backend; serve para rastreabilidade, suporte e evidência (TechLab/Academy).",
+    "whenRuns": [
+      "Quando UI registra ações relevantes (ex.: aprovação, publish, mudança de status) para evidência.",
+      "Quando UI exibe timeline/activity log a partir de eventos fornecidos pelo backend.",
+      "Quando um fluxo precisa gerar “evidências mínimas” (roteiro/prints/gif) associadas a correlationId."
+    ],
+    "inputs": [
+      {
+        "name": "AuditEvent[]",
+        "detail": "Eventos vindos do backend (preferível) ou gerados pela UI (leve)."
+      },
+      {
+        "name": "Context snapshot",
+        "detail": "Tenant/projeto/ambiente para metadados (somente ids/keys)."
+      },
+      {
+        "name": "Observability correlationId",
+        "detail": "correlationId para linkar com logs/traces."
+      },
+      {
+        "name": "i18n-core (opcional)",
+        "detail": "Labels amigáveis para action/type em UI."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "toTimelineItems()",
+        "detail": "Converte AuditEvent[] em TimelineItem[] (patterns-timeline)."
+      },
+      {
+        "name": "buildAuditMeta()",
+        "detail": "Gera metadados padronizados (toolKey/entityRef/actionKey/correlationId)."
+      },
+      {
+        "name": "formatAuditLabel()",
+        "detail": "Label amigável (ex.: “Aprovado por…”) com fallback."
+      },
+      {
+        "name": "evidenceHints()",
+        "detail": "Sugere evidências mínimas para TechLab (roteiro/prints) por actionKey."
+      }
+    ],
+    "responsibilities": [
+      "Padronizar modelo leve de AuditEvent para UI (quando necessário).",
+      "Mapear eventos para apresentação (timeline) de forma consistente.",
+      "Anexar correlationId e metadados mínimos para rastreabilidade.",
+      "Fornecer helpers de labels e formatação para UI (sem domínio específico).",
+      "Apoiar geração/organização de evidências mínimas (guidance), não armazenamento."
+    ],
+    "nonResponsibilities": [
+      "Não ser a auditoria oficial (isso é backend/logs).",
+      "Não persistir eventos localmente como fonte de verdade.",
+      "Não capturar dados sensíveis/PII.",
+      "Não fazer HTTP para buscar histórico (isso é data-access).",
+      "Não substituir patterns-timeline (apenas alimenta)."
+    ],
+    "dependencies": [
+      {
+        "name": "patterns-timeline",
+        "why": "Destino natural de apresentação dos eventos (TimelineItem)."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "CorrelationId e rastreabilidade; também para emitir eventos técnicos mínimos."
+      },
+      {
+        "name": "error-model",
+        "why": "Normalizar problemas de mapping/formatting sem quebrar UI."
+      },
+      {
+        "name": "i18n-core (opcional)",
+        "why": "Labels amigáveis e traduções."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/ui/audit-ui-helpers/src/lib/",
+      "files": [
+        {
+          "path": "audit-ui.model.ts",
+          "purpose": "Tipos: AuditEvent, ActorLite, EntityRef, AuditMeta, ActionKey."
+        },
+        {
+          "path": "audit-ui.mapper.ts",
+          "purpose": "Mapeia AuditEvent → TimelineItem (patterns-timeline)."
+        },
+        {
+          "path": "audit-ui.labels.ts",
+          "purpose": "Labels/formatadores (action/type) com fallback e i18n hook."
+        },
+        {
+          "path": "audit-ui.meta.ts",
+          "purpose": "Builder de metadados padronizados + correlationId."
+        },
+        {
+          "path": "audit-ui.evidence.ts",
+          "purpose": "Hints de evidência mínima por actionKey (TechLab/Academy)."
+        },
+        {
+          "path": "audit-ui.util.ts",
+          "purpose": "Helpers: sanitize meta, truncate, safe getters."
+        },
+        {
+          "path": "audit-ui.spec.ts",
+          "purpose": "Testes: mapping para timeline, labels, sanitização de meta."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir AuditEvent leve (timestamp, actionKey, entityRef, actorLite, meta).",
+      "Implementar builder de meta com correlationId e campos mínimos (sem PII).",
+      "Implementar mapper AuditEvent→TimelineItem com agrupamento/ordenação via patterns-timeline.",
+      "Implementar labels com fallback e i18n hook (opcional).",
+      "Implementar evidenceHints com um mapa simples por actionKey.",
+      "Criar testes mínimos para mapping/labels/sanitização."
+    ],
+    "acceptanceCriteria": [
+      "AuditEvent é mapeado para TimelineItem de forma consistente.",
+      "correlationId e meta são anexados e sanitizados.",
+      "Labels possuem fallback e não quebram sem i18n.",
+      "Sem HTTP e sem persistência como fonte de verdade.",
+      "Testes mínimos cobrem mapping e sanitização."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Audit Trail UI Patterns",
+          "goal": "Mapear eventos para UI (timeline) com metadados mínimos e rastreáveis.",
+          "level": "Base",
+          "knowledge": [
+            "Modelagem de eventos",
+            "CorrelationId",
+            "Sanitização"
+          ]
+        },
+        {
+          "title": "Evidence-driven Delivery",
+          "goal": "Apoiar evidências mínimas no frontend sem criar auditoria falsa.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Evidência mínima",
+            "ActionKey guidance",
+            "Integração com patterns"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar audit-ui-helpers: model AuditEvent leve + meta builder com correlationId, mapper para TimelineItem (patterns-timeline), labels com fallback (i18n hook opcional), hints de evidência por actionKey e testes mínimos de mapping/sanitização.",
+      "generationSteps": [
+        "Criar model AuditEvent/meta/entityRef.",
+        "Criar meta builder com correlationId.",
+        "Criar mapper para TimelineItem.",
+        "Criar labels + evidenceHints.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Audit",
+        "Evidence"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR deixa claro que não é auditoria oficial (somente UI helpers)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Meta sanitizada (sem PII) e testada",
+        "Mapper → timeline validado em story/demo"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: AuditEvent → TimelineItem renderizando no patterns-timeline"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do audit-ui-helpers)",
+        "Guia: como mapear eventos do backend para timeline no frontend"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/audit-ui-helpers/jest.config.ts",
+        "profile": "basic",
+        "setupMode": "none"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../../../dist/out-tsc",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "isolatedModules": true,
+    "types": ["jest", "node"],
+    "emitDecoratorMetadata": false,
+    "experimentalDecorators": true
+  },
+  "files": ["src/test-setup.ts"],
+  "include": [
+    "jest.config.ts",
+    "jest.config.js",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts"
+  ]
+}

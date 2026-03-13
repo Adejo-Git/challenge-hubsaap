@@ -1,0 +1,26 @@
+/* libs/shared/ui/ui-feedback/components/ui-skeleton/ui-skeleton.component.scss */
+
+.ui-skeleton__line {
+  height: 12px;
+  margin-bottom: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg,
+      var(--color-surface-subtle),
+      var(--color-surface-elevated),
+      var(--color-surface-subtle));
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
+}

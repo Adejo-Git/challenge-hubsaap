@@ -1,0 +1,214 @@
+{
+  "PermissionRbac": {
+    "kind": "frontend",
+    "key": "PermissionRbac",
+    "title": "PermissionRbac",
+    "summary": "Shared-lib de autorização RBAC: normaliza roles/permissions, resolve grants (allow/deny) e expõe APIs simples (hasRole/hasPermission) para consumo do access-decision e camadas de UI.",
+    "function": "Implementar o núcleo de RBAC (role-based access control) no frontend: carregar/interpretar claims/roles vindas da sessão, mapear roles→permissions (quando aplicável), suportar herança e override, e expor métodos determinísticos para checagem de permissão. Não executa decisão final sozinha (isso é do access-decision, que combina RBAC + flags + policies).",
+    "whenRuns": [
+      "Ao avaliar permissões para montar menu/visibilidade (via access-decision).",
+      "Ao habilitar/desabilitar ações de UI (botões, menus) com base em permission checks.",
+      "Ao validar entrada em rotas (indiretamente via access-decision e route-guards).",
+      "Ao trocar contexto se as permissões dependerem de escopo (ex.: tenant/projeto)."
+    ],
+    "inputs": [
+      {
+        "name": "ClaimsLite (AuthSession)",
+        "detail": "Roles, groups e/ou permission claims (forma compacta e segura)."
+      },
+      {
+        "name": "PermissionMap",
+        "detail": "Mapeamento estático/configurável role→permissions, quando necessário."
+      },
+      {
+        "name": "Context (opcional)",
+        "detail": "Escopo atual (tenant/projeto) se o RBAC for escopado."
+      },
+      {
+        "name": "RuntimeConfig (opcional)",
+        "detail": "Estratégia RBAC: claims-only vs map-based."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "hasRole()",
+        "detail": "True/false para role(s) especificadas."
+      },
+      {
+        "name": "hasPermission()",
+        "detail": "True/false para permission(s) especificadas."
+      },
+      {
+        "name": "resolveGrants()",
+        "detail": "Retorna set efetivo de permissões (effective permissions) para cache."
+      },
+      {
+        "name": "explain()",
+        "detail": "Explicação técnica (sem dados sensíveis) do motivo do allow/deny (debug)."
+      }
+    ],
+    "responsibilities": [
+      "Normalizar roles/permissions vindas da sessão em formato consistente.",
+      "Resolver permissões efetivas de forma determinística (cacheável).",
+      "Expor APIs simples para checagem de permissão (hasRole/hasPermission).",
+      "Suportar estratégia configurável (claims-only ou role→permission map).",
+      "Suportar “explain” para debug (motivo do deny) sem vazar dados sensíveis.",
+      "Não duplicar lógica de policy/ABAC (isso é policy-engine)."
+    ],
+    "nonResponsibilities": [
+      "Não decidir acesso final (isso é access-decision combinando flags + policy + rbac).",
+      "Não controlar rotas/guards (isso é route-guards no Shell).",
+      "Não fazer chamadas HTTP (sem HttpClient).",
+      "Não persistir sessão (isso é auth-session + storage-secure).",
+      "Não interpretar regras ABAC (atributos) ou conditions complexas."
+    ],
+    "dependencies": [
+      {
+        "name": "auth-session",
+        "why": "Fonte de claims/roles e atualizações reativas do usuário."
+      },
+      {
+        "name": "runtime-config (opcional)",
+        "why": "Selecionar estratégia RBAC e carregar permission-map."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados: InvalidPermissionKey, InvalidRbacConfig."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Telemetria de deny/allow agregada (sem dados sensíveis)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/permission-rbac/src/lib/",
+      "files": [
+        {
+          "path": "permission-rbac.service.ts",
+          "purpose": "API principal: hasRole/hasPermission/resolveGrants/explain."
+        },
+        {
+          "path": "permission-rbac.model.ts",
+          "purpose": "Tipos: RoleKey, PermissionKey, Grants, ExplainResult."
+        },
+        {
+          "path": "permission-map.ts",
+          "purpose": "Mapeamento role→permissions (se adotado) e helpers."
+        },
+        {
+          "path": "permission-rbac.cache.ts",
+          "purpose": "Cache das permissões efetivas por sessão/contexto."
+        },
+        {
+          "path": "permission-rbac.util.ts",
+          "purpose": "Helpers: normalize claims, merge grants, validate keys."
+        },
+        {
+          "path": "permission-rbac.errors.ts",
+          "purpose": "Erros padronizados e validações de config."
+        },
+        {
+          "path": "permission-rbac.spec.ts",
+          "purpose": "Testes: claims-only, map-based, cache, explain, invalid keys."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir tipos RoleKey/PermissionKey e convenção de nomes (ex.: tool.pip.read).",
+      "Implementar normalização de claims/roles vindas do auth-session.",
+      "Implementar estratégia claims-only (permissions já vêm no token) e map-based (role→permissions).",
+      "Implementar resolveGrants() e cache por sessão+contexto (invalidate em troca de sessão/contexto).",
+      "Implementar hasPermission/hasRole com validação e retorno determinístico.",
+      "Implementar explain() retornando motivo técnico (missing permission, missing role, invalid key).",
+      "Criar testes para estratégias e invalidação de cache."
+    ],
+    "acceptanceCriteria": [
+      "hasPermission/hasRole funcionam de forma determinística e cacheável.",
+      "Troca de sessão/contexto invalida cache corretamente.",
+      "Estratégias claims-only e map-based são suportadas (se configuradas).",
+      "explain() ajuda debug sem expor tokens/claims completas.",
+      "Sem HTTP e sem acoplamento a Router.",
+      "Testes mínimos cobrem estratégias e invalidação de cache."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "RBAC in Frontend",
+          "goal": "Implementar checagem de permissões segura e cacheável.",
+          "level": "Intermediário",
+          "knowledge": [
+            "RBAC vs ABAC",
+            "Estratégias claims-only vs role-map",
+            "Cache e invalidação por contexto"
+          ]
+        },
+        {
+          "title": "Explainability for AuthZ",
+          "goal": "Dar transparência técnica do deny sem vazar dados sensíveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Explain results",
+            "Validação de keys",
+            "Erros padronizados"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar permission-rbac: service para hasRole/hasPermission com estratégia claims-only e/ou role→permission map, resolveGrants com cache por sessão/contexto, explain() com motivo do deny sem dados sensíveis e testes mínimos cobrindo estratégias/cache/invalidation.",
+      "generationSteps": [
+        "Criar model e convenções de keys.",
+        "Implementar normalização de claims.",
+        "Implementar estratégias (claims-only/map-based).",
+        "Implementar resolveGrants() e cache por sessão/contexto.",
+        "Implementar explain e testes."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Security-first",
+        "Guided Build",
+        "RBAC"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta convenção de PermissionKey e estratégia adotada",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Cache e invalidação validados",
+        "explain() sem dados sensíveis"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Teste manual: role/permission allow e deny (com explain)",
+        "Notas: estratégia escolhida (claims-only vs map-based)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do permission-rbac)",
+        "Guia: convenção de PermissionKey e como declarar maps"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/permission-rbac/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "patterns-smart-table",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "libs/shared/ui/patterns-smart-table",
+  "sourceRoot": "libs/shared/ui/patterns-smart-table/src",
+  "prefix": "hub",
+  "projectType": "library",
+  "tags": ["type:shared", "scope:platform"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/shared/ui/patterns-smart-table/jest.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/shared/ui/patterns-smart-table/src --ext .ts"
+      }
+    }
+  }
+}

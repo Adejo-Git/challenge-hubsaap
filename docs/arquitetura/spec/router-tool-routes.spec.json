@@ -1,0 +1,203 @@
+{
+  "RouterToolRoutes": {
+    "kind": "frontend",
+    "key": "RouterToolRoutes",
+    "title": "RouterToolRoutes",
+    "summary": "Camada de roteamento do Shell: define rotas base e integra o carregamento lazy das tools em /tools/* com guards e fallback.",
+    "function": "Define as rotas do Shell e o mecanismo de roteamento para tools. Centraliza convenções de navegação (/tools/*), aplica guards, resolve fallback (401/403/404) e garante consistência entre menu/visibilidade e rotas disponíveis por contexto/flags/decisão.",
+    "whenRuns": [
+      "Em toda navegação do Router (NavigationStart/End, GuardsCheckStart/End).",
+      "Ao acessar rotas protegidas (AuthGuard/Route Guards).",
+      "Ao tentar acessar /tools/* (carregamento lazy do ToolRoot/ToolModule).",
+      "Ao ocorrer mudança de contexto que invalide rotas/visibilidade (reconciliação de menu/fallback)."
+    ],
+    "inputs": [
+      {
+        "name": "Angular Router",
+        "detail": "Eventos de navegação, configuração de rotas, lazy loading."
+      },
+      {
+        "name": "AuthGuard",
+        "detail": "Bloqueia rotas quando não autenticado e conduz ao login/callback."
+      },
+      {
+        "name": "Route Guards",
+        "detail": "Aplica AccessDecision (visibilidade/entrada) para evitar bypass de rotas."
+      },
+      {
+        "name": "ToolRegistryService",
+        "detail": "Fonte de tools disponíveis e seus metadados/rotas internas (indireto via Access Layer)."
+      },
+      {
+        "name": "FeatureFlagService",
+        "detail": "Habilitação por contexto/ambiente para bloquear rotas de tools desabilitadas."
+      },
+      {
+        "name": "NavigationService",
+        "detail": "Breadcrumbs e navegação coerentes com rotas liberadas."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Rotas do Shell",
+        "detail": "Rotas base (home, catálogo, docs, etc.) e páginas de erro."
+      },
+      {
+        "name": "Rota /tools/*",
+        "detail": "Lazy loading das tools com integração de guards e fallback."
+      },
+      {
+        "name": "Fallbacks",
+        "detail": "401/403/404/erro quando rota não existir, tool desabilitada ou acesso negado."
+      }
+    ],
+    "responsibilities": [
+      "Centralizar convenções de roteamento do Hub (especialmente /tools/*).",
+      "Aplicar guards corretamente para impedir bypass (rota direta em URL).",
+      "Garantir que tool desabilitada por flag/contexto não seja acessável via rota.",
+      "Manter fallback claro e previsível (401/403/404) em vez de “tela quebrada”.",
+      "Evitar over-engineering: registro dinâmico de rotas só quando necessário; preferir lazy com guards + catálogo."
+    ],
+    "dependencies": [
+      {
+        "name": "AppShellComponent",
+        "why": "Hospeda o router-outlet no slot Content."
+      },
+      {
+        "name": "AuthGuard",
+        "why": "Proteção de autenticação."
+      },
+      {
+        "name": "Route Guards",
+        "why": "Proteção por decisão de acesso."
+      },
+      {
+        "name": "Access Layer",
+        "why": "ToolRegistryService, FeatureFlagService, NavigationService, AccessDecision (indireto)."
+      },
+      {
+        "name": "Shared-Libs",
+        "why": "ObservabilityService (tracking), ErrorPages (401/403/404)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/shell/src/app/shell/router/",
+      "files": [
+        {
+          "path": "shell-routes.ts",
+          "purpose": "Define rotas base do Shell e /tools/*."
+        },
+        {
+          "path": "tool-routes.ts",
+          "purpose": "Wrapper/infra de lazy routes das tools (guards + fallback)."
+        },
+        {
+          "path": "router-events.ts",
+          "purpose": "Bridge de eventos do router para observabilidade/breadcrumbs."
+        },
+        {
+          "path": "router.spec.ts",
+          "purpose": "Testes: lazy /tools, guards, fallback 401/403/404."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir rotas base do Shell (home + páginas padrão) e registrar páginas de erro (401/403/404).",
+      "Criar rota /tools/* com lazy loading do entrypoint da tool (ToolRoot/ToolModule).",
+      "Acoplar AuthGuard e Route Guards na rota /tools/* e nas rotas sensíveis do Shell.",
+      "No Route Guard, bloquear tool desabilitada por flag/contexto e redirecionar para 404/403 conforme regra.",
+      "Publicar eventos do Router (NavigationEnd) para ObservabilityService e para breadcrumbs (NavigationService).",
+      "Criar testes: acesso sem login (401/login), acesso negado (403), tool inexistente (404), tool ok (lazy)."
+    ],
+    "acceptanceCriteria": [
+      "Rotas base do Shell funcionam e não dependem de tools.",
+      "Acesso a /tools/* funciona via lazy loading.",
+      "Guards impedem bypass por URL direta.",
+      "Tool desabilitada por flag/contexto não abre (fallback coerente).",
+      "Testes mínimos cobrindo lazy + guards + fallback 401/403/404."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Angular Router & Lazy Loading",
+          "goal": "Implementar rotas de Shell e /tools/* com lazy routes e guards.",
+          "level": "Base",
+          "knowledge": [
+            "Router config, lazy routes, route params",
+            "Guards e resolvers",
+            "Fallback patterns (401/403/404) e navegação segura"
+          ]
+        },
+        {
+          "title": "Hub Navigation Consistency",
+          "goal": "Garantir consistência entre menu, rotas e decisão de acesso.",
+          "level": "Intermediário",
+          "knowledge": [
+            "NavigationService e breadcrumbs",
+            "Integração com ToolRegistry/FeatureFlags",
+            "Prevenção de bypass (rota direta)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar Router & ToolRoutes: rotas base do Shell + /tools/* lazy, aplicar AuthGuard e Route Guards, fallback 401/403/404, publicar eventos para observabilidade e breadcrumbs. Entregar arquivos + testes mínimos.",
+      "generationSteps": [
+        "Gerar boilerplate de rotas (shell-routes + tool-routes).",
+        "Implementar /tools/* lazy com guards.",
+        "Implementar fallback 401/403/404.",
+        "Gerar testes mínimos (lazy + guards + fallback)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Router Patterns"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR com descrição do módulo + rotas afetadas",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem rotas “mágicas” fora do padrão /tools/*",
+        "Fallback 401/403/404 validado"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro de teste (casos: sem login, sem permissão, tool inexistente, tool ok)",
+        "Print/gif de navegação e fallback"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica de roteamento)",
+        "Guia rápido: como registrar uma tool em /tools/* (contrato)",
+        "Playbook de troubleshooting de rotas/guards"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não armazenar estado de sessão/contexto (isso é responsabilidade do Access Layer).",
+      "Não “autorizAR” por conta própria (não implementar regra de permissão no arquivo de rotas).",
+      "Não decidir menu/breadcrumbs: apenas publica eventos e respeita NavigationService.",
+      "Não fazer registro dinâmico complexo de rotas sem necessidade (evitar engine de rotas).",
+      "Não acoplar rotas do Shell a rotas internas das tools (tools são lazy e encapsuladas)."
+    ],
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:shell"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/shell/jest.config.ts"
+      }
+    }
+  }
+}

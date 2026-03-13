@@ -1,0 +1,15 @@
+<!-- // src\app\lib\ui-layout\topbar\topbar.component.html -->
+
+<header class="ui-topbar" [class.ui-topbar--sticky]="sticky">
+  <div class="ui-topbar__slot ui-topbar__slot--left">
+    <ng-content select="[slot=left]"></ng-content>
+  </div>
+
+  <div class="ui-topbar__slot ui-topbar__slot--center">
+    <ng-content select="[slot=center]"></ng-content>
+  </div>
+
+  <div class="ui-topbar__slot ui-topbar__slot--right">
+    <ng-content select="[slot=right]"></ng-content>
+  </div>
+</header>

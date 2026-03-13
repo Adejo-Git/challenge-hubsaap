@@ -1,0 +1,217 @@
+{
+  "NotificationCenterComponent": {
+    "kind": "frontend",
+    "key": "NotificationCenterComponent",
+    "title": "NotificationCenterComponent",
+    "summary": "Centro de notificações do Hub: exibe alertas, eventos e comunicados em um painel (normalmente no RightPanel do Shell), com filtros e estados de leitura.",
+    "function": "Exibir e gerenciar notificações do Hub (sistema, ferramentas e usuário) em um painel consistente. Permite listar, filtrar, marcar como lida, limpar e navegar para o destino associado (deep link), mantendo UX uniforme e rastreável.",
+    "whenRuns": [
+      "Sempre que o AppShellComponent renderiza o RightPanel (ou área de notificações).",
+      "Quando NotificationService emite novas notificações (push/poll/local).",
+      "Quando o usuário abre/fecha o painel, aplica filtros ou executa ações (mark as read/clear).",
+      "Quando o contexto muda e notificações dependem do contexto (recarregar/segmentar)."
+    ],
+    "inputs": [
+      {
+        "name": "NotificationService",
+        "detail": "Fonte agregada de notificações (inbox do Hub): listar, observar stream, marcar lidas e limpar."
+      },
+      {
+        "name": "ContextService",
+        "detail": "Contexto ativo para segmentar notificações (tenant/cliente/projeto/ambiente) quando aplicável."
+      },
+      {
+        "name": "NavigationService",
+        "detail": "Navegação para destinos (deep links) associados a uma notificação."
+      },
+      {
+        "name": "UI Layout (libs/ui-layout)",
+        "detail": "Slot/contêiner visual onde o painel é acoplado (RightPanel) e padrões de UI."
+      },
+      {
+        "name": "UiFeedback (toast/loading/dialog)",
+        "detail": "Feedback de ações (ex.: erro ao marcar como lida) sem quebrar a navegação."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Lista renderizada",
+        "detail": "Notificações renderizadas com agrupamento/ordenação e estados (lida/não lida, severidade)."
+      },
+      {
+        "name": "Ações de usuário",
+        "detail": "Marcar como lida/limpar/favoritar (se aplicável) e refletir no NotificationService."
+      },
+      {
+        "name": "Deep link",
+        "detail": "Navegar para uma rota/ação no Hub a partir da notificação."
+      },
+      {
+        "name": "Telemetria",
+        "detail": "Eventos mínimos (open/close/click/mark-read/clear) para observabilidade."
+      }
+    ],
+    "responsibilities": [
+      "Renderizar o painel de notificações do Hub em um padrão único e consistente.",
+      "Consumir NotificationService como fonte única (não manter “inbox” local permanente).",
+      "Separar responsabilidades: UI (componente) vs estado/IO (service).",
+      "Garantir UX robusta: empty state, loading, erro e ações idempotentes.",
+      "Registrar telemetria mínima de uso e ações (sem dados sensíveis)."
+    ],
+    "nonResponsibilities": [
+      "Não buscar notificações via HttpClient diretamente (IO fica no NotificationService/data-access).",
+      "Não decidir permissões/visibilidade de ações (se precisar, consumir AccessDecisionService via service).",
+      "Não acoplar formato de notificação a tools específicas (usar contrato genérico).",
+      "Não implementar “busca global” do Hub (escopo é inbox/painel de notificações).",
+      "Não ser um “event bus” genérico; apenas UI de notificações."
+    ],
+    "dependencies": [
+      {
+        "name": "NotificationService (Shared-Libs)",
+        "why": "Fonte única de notificações e ações (listar/stream/mark read/clear)."
+      },
+      {
+        "name": "ContextService (Access Layer)",
+        "why": "Segmentar/recarregar notificações por contexto quando aplicável."
+      },
+      {
+        "name": "NavigationService (Access Layer)",
+        "why": "Navegação para deep links a partir da notificação."
+      },
+      {
+        "name": "UI Layout (Shared-Libs)",
+        "why": "Acoplamento no RightPanel e padrões visuais do Hub."
+      },
+      {
+        "name": "UiFeedback (Shared-Libs)",
+        "why": "Feedback de ações (erro/sucesso) sem interromper fluxo."
+      },
+      {
+        "name": "ObservabilityService (Shared-Libs)",
+        "why": "Telemetria mínima (open/click/mark-read) e correlação."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/shell/src/app/shell/notifications/notification-center/",
+      "files": [
+        {
+          "path": "notification-center.component.ts",
+          "purpose": "Componente: render e ações (open/close/filter/mark-read/clear), integra services."
+        },
+        {
+          "path": "notification-center.component.html",
+          "purpose": "Template: lista, filtros, empty state, loading e ações."
+        },
+        {
+          "path": "notification-center.component.scss",
+          "purpose": "Ajustes mínimos (tokens/tema), sem CSS pesado."
+        },
+        {
+          "path": "notification-center.component.spec.ts",
+          "purpose": "Testes: render lista, empty/loading, ações (mark-read/clear), click deep link."
+        },
+        {
+          "path": "notification.model.ts",
+          "purpose": "Contrato local (se necessário) alinhado ao NotificationService (id, title, body, severity, link, readAt)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar componente acoplável ao RightPanel (UI Layout).",
+      "Assinar stream/listagem do NotificationService e renderizar lista ordenada (não lidas primeiro, por exemplo).",
+      "Implementar filtros simples (todas/não lidas/severidade) e busca local opcional (client-side).",
+      "Implementar ações: marcar como lida (single/bulk) e limpar (bulk), com feedback via UiFeedback.",
+      "No click de notificação com link, navegar via NavigationService para o destino (deep link).",
+      "Ao trocar contexto, reconsultar/segmentar notificações se o serviço for context-aware.",
+      "Registrar telemetria mínima (open/close/click/mark-read/clear) no ObservabilityService."
+    ],
+    "acceptanceCriteria": [
+      "Painel renderiza no Shell (RightPanel) com empty state, loading e lista.",
+      "Novas notificações aparecem sem refresh (stream/observable).",
+      "Ações de marcar como lida e limpar funcionam e refletem no NotificationService.",
+      "Click em notificação com link navega corretamente para o destino.",
+      "Sem HttpClient direto no componente.",
+      "Sem leak de subscriptions (takeUntil/DestroyRef).",
+      "Testes mínimos cobrindo render + ações + deep link."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "UI State Patterns (List/Empty/Loading/Error)",
+          "goal": "Construir painel com estados robustos e ações idempotentes.",
+          "level": "Base",
+          "knowledge": [
+            "Componentes reativos (signals/observables) e estados de UI",
+            "Empty state/loading/error patterns",
+            "Ações idempotentes e feedback (toast/dialog)"
+          ]
+        },
+        {
+          "title": "Navigation & Telemetry in UI",
+          "goal": "Implementar deep links e telemetria mínima com segurança.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Deep links e roteamento seguro",
+            "Telemetria sem dados sensíveis",
+            "Eventos de UI e correlação"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar NotificationCenterComponent do Hub: painel de notificações (lista, filtros, empty/loading/error), ações (mark-read/clear), navegação por deep link via NavigationService, telemetria mínima em ObservabilityService, sem HttpClient direto. Entregar TS/HTML/SCSS + testes.",
+      "generationSteps": [
+        "Gerar boilerplate (component.ts/html/scss/spec) na pasta sugerida.",
+        "Integrar NotificationService (stream/list) e estados de UI (loading/empty/error).",
+        "Implementar ações mark-read/clear com feedback (UiFeedback).",
+        "Implementar click com deep link (NavigationService).",
+        "Adicionar telemetria mínima (open/click/mark-read/clear).",
+        "Criar testes mínimos (render + ações + deep link)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "UI Patterns"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR com escopo do painel (filtros/ações) e contrato de notificação documentado",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient no componente (somente NotificationService)",
+        "Sem leaks (DestroyRef/takeUntil) e estados de UI cobertos",
+        "Telemetria mínima implementada"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro de teste: abrir painel, receber notificação, marcar como lida, limpar, deep link",
+        "Print/gif do comportamento (opcional) ou notas de validação"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do NotificationCenterComponent)",
+        "Guia: contrato de notificação (campos mínimos + deep link)",
+        "Playbook: troubleshooting (notificações não chegam / link quebrado)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:shell"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/shell/jest.config.ts"
+      }
+    }
+  }
+}

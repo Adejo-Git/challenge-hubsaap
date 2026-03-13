@@ -1,0 +1,26 @@
+// src\app\lib\ui-layout\right-panel\right-panel.component.scss
+
+.ui-right-panel__overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-surface-hover);
+  z-index: var(--z-index-modal);
+}
+
+.ui-right-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: var(--layout-right-panel-width, 320px);
+  background: var(--color-surface-base);
+  border-left: var(--layout-border-width, 1px) solid var(--color-border-default);
+  overflow: auto;
+  transform: translateX(100%);
+  transition: transform var(--accessibility-motionBase, 200ms);
+  z-index: var(--z-index-popover);
+
+  &--open {
+    transform: translateX(0);
+  }
+}

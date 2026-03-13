@@ -1,0 +1,66 @@
+<ui-content-frame>
+  <section class="approval-widget" [class.approval-widget--compact]="uiOptions.compact">
+    <header class="approval-widget__header">
+      <div>
+        <h3 class="approval-widget__title">{{ subject.title || (subject.type + ' ' + subject.id) }}</h3>
+        <p class="approval-widget__subtitle">ID: {{ subject.id }} • Tipo: {{ subject.type }}</p>
+      </div>
+      <span class="approval-widget__status" [class]="'approval-widget__status approval-widget__status--' + status">
+        {{ statusLabel }}
+      </span>
+    </header>
+
+    <div class="approval-widget__comment">
+      <label for="approval-comment">{{ uiOptions.labels?.comment || 'Comentário / motivo' }}</label>
+      <textarea
+        id="approval-comment"
+        rows="3"
+        [(ngModel)]="comment"
+        [disabled]="isBusy"
+        placeholder="Informe comentário quando aplicável"
+      ></textarea>
+    </div>
+
+    <p class="approval-widget__hint" *ngIf="isCommentRequiredFor('reject') || isCommentRequiredFor('requestChanges')">
+      Comentário é obrigatório para rejeição e/ou solicitação de ajustes, conforme configuração.
+    </p>
+
+    <div class="approval-widget__actions">
+      <button type="button" *ngIf="hasAction('approve')" [disabled]="isBusy" (click)="onActionClick('approve')">
+        {{ getActionLabel('approve') }}
+      </button>
+
+      <button type="button" *ngIf="hasAction('requestChanges')" [disabled]="isBusy" (click)="onActionClick('requestChanges')">
+        {{ getActionLabel('requestChanges') }}
+      </button>
+
+      <button type="button" *ngIf="hasAction('reject')" [disabled]="isBusy" (click)="onActionClick('reject')">
+        {{ getActionLabel('reject') }}
+      </button>
+
+      <button type="button" [disabled]="isBusy" (click)="onCancelClick()">
+        {{ uiOptions.labels?.cancel || 'Cancelar' }}
+      </button>
+    </div>
+
+    <section class="approval-widget__policy" *ngIf="policyHints?.approve || policyHints?.reject || policyHints?.requestChanges">
+      <h4>Políticas</h4>
+      <ul>
+        <li *ngIf="policyHints?.approve">Aprovar: {{ policyHints?.approve }}</li>
+        <li *ngIf="policyHints?.requestChanges">Solicitar ajustes: {{ policyHints?.requestChanges }}</li>
+        <li *ngIf="policyHints?.reject">Rejeitar: {{ policyHints?.reject }}</li>
+      </ul>
+    </section>
+
+    <section class="approval-widget__history" *ngIf="visibleHistory.length > 0">
+      <h4>Histórico recente</h4>
+      <ul>
+        <li *ngFor="let item of visibleHistory">
+          <strong>{{ item.actor }}</strong>
+          <span> • {{ item.action }} • {{ item.timestamp }}</span>
+          <p *ngIf="item.comment">{{ item.comment }}</p>
+        </li>
+      </ul>
+    </section>
+  </section>
+</ui-content-frame>

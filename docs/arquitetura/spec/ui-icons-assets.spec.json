@@ -1,0 +1,201 @@
+{
+  "UiIconsAssets": {
+    "kind": "frontend",
+    "key": "UiIconsAssets",
+    "title": "UiIconsAssets",
+    "summary": "Catálogo e pipeline de ícones e assets do Hub: padroniza import/uso de ícones (SVG) e recursos estáticos (logos, ilustrações) com versionamento e segurança.",
+    "function": "Centralizar o conjunto de ícones e assets do Hub (SVGs, logos, pictogramas) com API estável para consumo por ui-components e apps. Garante consistência visual (tamanho/traço), performance (tree-shaking/inline), e governança (naming, licença, revisão).",
+    "whenRuns": [
+      "No build, quando assets são empacotados e otimizados.",
+      "Em runtime, quando componentes renderizam ícones via um IconComponent ou helper.",
+      "Quando tools/shell precisam exibir logos/ilustrações padronizadas."
+    ],
+    "inputs": [
+      {
+        "name": "SVG icon set",
+        "detail": "Arquivos SVG aprovados (stroke/fill padronizado) e nomeados."
+      },
+      {
+        "name": "Brand assets",
+        "detail": "Logos do Hub/Tools (variações mono/color), se existirem."
+      },
+      {
+        "name": "A11y requirements",
+        "detail": "aria-hidden, title/desc, role=\"img\", fallback para texto."
+      },
+      {
+        "name": "Build config",
+        "detail": "Estratégia: inline svg, sprite, ou imports por ícone (tree-shaking)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Icon registry",
+        "detail": "Mapa nome→SVG (ou import por ícone) para consumo controlado."
+      },
+      {
+        "name": "IconComponent (opcional)",
+        "detail": "Componente leve: <hub-icon name=\"...\" size=\"...\" />."
+      },
+      {
+        "name": "Asset exports",
+        "detail": "Exports para logos/ilustrações e paths estáveis."
+      }
+    ],
+    "responsibilities": [
+      "Padronizar naming (ex.: `tool`, `nav.home`, `status.success`) e evitar conflitos.",
+      "Garantir consistência visual (viewBox, stroke width, alinhamento).",
+      "Garantir acessibilidade: ícones decorativos vs informativos.",
+      "OtimizAR performance: evitar carregar “pacotão” de ícones sem necessidade.",
+      "Governança de assets (licença, origem, versão) e revisão antes de publicar."
+    ],
+    "nonResponsibilities": [
+      "Não definir estilos do tema (isso é ui-tokens/ui-theme).",
+      "Não criar componentes de UI complexos (isso é ui-components).",
+      "Não fazer runtime fetch de assets remotos.",
+      "Não embutir assets específicos de tool sem necessidade (evitar acoplamento).",
+      "Não substituir um sistema de ícones de vendor se você optar por um (apenas integra)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-tokens",
+        "why": "Tamanhos/cores semânticas para ícones (ex.: currentColor + tokens)."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Cores via CSS vars quando o ícone usa currentColor."
+      },
+      {
+        "name": "ui-components",
+        "why": "Consumo via Button/Badge/Menu etc. e padronização do IconComponent."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-icons-assets/src/lib/",
+      "files": [
+        {
+          "path": "icons/",
+          "purpose": "SVGs brutos padronizados (um por arquivo) e revisados."
+        },
+        {
+          "path": "assets/",
+          "purpose": "Logos/ilustrações (SVG/PNG) com variações e naming claro."
+        },
+        {
+          "path": "icon-names.ts",
+          "purpose": "Enum/union de nomes permitidos (API pública estável)."
+        },
+        {
+          "path": "icon-registry.ts",
+          "purpose": "Registro nome→import/inline (controla export e tree-shaking)."
+        },
+        {
+          "path": "icon.component.ts",
+          "purpose": "Componente leve para renderizar ícone com size/aria."
+        },
+        {
+          "path": "icon.util.ts",
+          "purpose": "Helpers: sanitize svg, default size, aria rules."
+        },
+        {
+          "path": "ui-icons-assets.spec.ts",
+          "purpose": "Testes: nomes válidos, render básico, aria rules, fallback."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir convenção de nomes e pastas (nav/*, tool/*, status/*, action/*).",
+      "Padronizar SVGs: viewBox, sem inline styles, usar currentColor quando aplicável.",
+      "Criar `icon-names.ts` como contrato público (union/enum).",
+      "Criar `icon-registry.ts` com imports por ícone (evitar bundle gigante).",
+      "Implementar IconComponent com inputs: name, size, title (opcional), decorative.",
+      "Garantir a11y: decorative → aria-hidden; informative → role=\"img\" + title.",
+      "Criar testes mínimos (render + aria + nome inválido)."
+    ],
+    "acceptanceCriteria": [
+      "Ícones podem ser usados de forma consistente por ui-components (buttons/menus).",
+      "Bundle não carrega ícones não usados (estratégia de imports controlada).",
+      "A11y: decorative vs informative implementado corretamente.",
+      "Naming e registry são estáveis e versionáveis.",
+      "Testes mínimos cobrem render e regras de aria."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Icon Systems (SVG + A11y)",
+          "goal": "Criar catálogo de ícones com governança, performance e acessibilidade.",
+          "level": "Base",
+          "knowledge": [
+            "SVG viewBox/currentColor",
+            "ARIA para ícones",
+            "Imports controlados (tree-shaking)"
+          ]
+        },
+        {
+          "title": "Design System Governance (Assets)",
+          "goal": "Padronizar naming, versões e revisão de assets.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Naming conventions",
+            "Controle de bundle",
+            "Licenças e origem"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ui-icons-assets: contrato de nomes (icon-names), registry com imports por ícone, IconComponent com size e regras de a11y (decorative/informative), pasta icons/assets e testes mínimos (nome inválido/aria/render).",
+      "generationSteps": [
+        "Definir convenções de nomes e union de icon names.",
+        "Criar registry com imports controlados.",
+        "Criar IconComponent com aria rules e size.",
+        "Adicionar util de sanitize/fallback.",
+        "Criar testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Design System",
+        "A11y"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta convenções de nomes e estratégia de registry (bundle)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "A11y revisada (decorative vs informative)",
+        "Sem “pacotão” importando todos os SVGs à força"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: ícone em botão/menu (ui-components) com aria correto"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ui-icons-assets)",
+        "Guia: como adicionar novo ícone e regras de naming/a11y"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/shared/ui/ui-icons-assets/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

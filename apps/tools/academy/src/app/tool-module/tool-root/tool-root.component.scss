@@ -1,0 +1,9 @@
+// Tool Root Component styles
+// Usa tokens e shared libs do Hub - sem duplicação de estilos
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+

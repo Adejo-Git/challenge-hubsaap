@@ -1,0 +1,15 @@
+<!-- libs/shared/ui/ui-feedback/components/ui-denied-state/ui-denied-state.component.html -->
+
+<section class="ui-denied" role="alert" aria-live="assertive" [attr.aria-label]="message?.title">
+  <h2>{{ message.title }}</h2>
+
+  <p *ngIf="message.message">
+    {{ message.message }}
+  </p>
+
+  <div class="ui-denied__actions" *ngIf="actions.length">
+    <button *ngFor="let action of actions" type="button" (click)="onActionClick(action)">
+      {{ action.label }}
+    </button>
+  </div>
+</section>

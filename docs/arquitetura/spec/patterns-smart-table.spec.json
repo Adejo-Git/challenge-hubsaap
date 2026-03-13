@@ -1,0 +1,280 @@
+{
+  "PatternsSmartTable": {
+    "kind": "frontend",
+    "key": "PatternsSmartTable",
+    "title": "PatternsSmartTable",
+    "summary": "Pattern reutilizável de tabela “smart”: paginação, ordenação, filtros, seleção, colunas dinâmicas, empty/error states e integração com data providers (local/remote) sem acoplar domínio.",
+    "function": "Fornecer um componente/pattern de tabela avançada que padroniza comportamento e UX: sorting, filtering, pagination, column definitions, row selection, ações por linha, estados (loading/empty/error), persistência opcional de preferências (colunas visíveis, ordem) e integração com fontes de dados locais ou remotas (via DataProvider). Não implementa lógica de domínio nem faz chamadas HTTP diretamente.",
+    "whenRuns": [
+      "Quando Shell/Tools exibem listas tabulares (catálogo, evidências, registros, logs, etc.).",
+      "Quando é necessário padrão consistente de filtros e paginação.",
+      "Quando tabelas precisam suportar seleção em massa e ações em lote.",
+      "Quando há necessidade de colunas configuráveis e persistência de preferências de usuário."
+    ],
+    "inputs": [
+      {
+        "name": "columns: SmartTableColumn[]",
+        "detail": "Definição de colunas (key, title, type, width, sortable, filterable, cellTemplate)."
+      },
+      {
+        "name": "dataProvider: SmartTableDataProvider<T>",
+        "detail": "Fonte de dados (local/remote) com query state (page/sort/filter)."
+      },
+      {
+        "name": "rowKey",
+        "detail": "Função/chave estável para identificar linhas (id)."
+      },
+      {
+        "name": "initialState",
+        "detail": "Estado inicial: page, pageSize, sort, filters, visibleColumns."
+      },
+      {
+        "name": "selectionMode",
+        "detail": "none | single | multi + opções (selectAllCurrentPage/AllMatching)."
+      },
+      {
+        "name": "actions",
+        "detail": "Ações por linha e ações em lote (handlers externos)."
+      },
+      {
+        "name": "layoutOptions",
+        "detail": "Densidade (compact/comfortable), sticky header, zebra, height/virtual scroll (opcional)."
+      },
+      {
+        "name": "preferencesKey",
+        "detail": "Chave para persistir preferências (opcional, namespaced por tool/hub)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "stateChange",
+        "detail": "Evento quando query state muda (page/sort/filters/columns)."
+      },
+      {
+        "name": "selectionChange",
+        "detail": "Evento quando seleção muda (selected keys + meta)."
+      },
+      {
+        "name": "rowAction",
+        "detail": "Evento de ação por linha (actionId + row)."
+      },
+      {
+        "name": "bulkAction",
+        "detail": "Evento de ação em lote (actionId + selected)."
+      },
+      {
+        "name": "error",
+        "detail": "Evento quando dataProvider falha (StandardError)."
+      }
+    ],
+    "responsibilities": [
+      "Padronizar UX de tabela: loading/empty/error, paginação, ordenação e filtros.",
+      "Manter query state reativo e serializável (page/sort/filters).",
+      "Orquestrar interação com dataProvider (request/cancel/refresh) sem HTTP direto.",
+      "Suportar seleção e ações (row/bulk) sem executar lógica de domínio.",
+      "Permitir colunas dinâmicas e templates de célula.",
+      "Persistir preferências opcionais de visualização (colunas, densidade, pageSize) com escopo.",
+      "Ser acessível (teclado/aria) e performático (listas grandes)."
+    ],
+    "nonResponsibilities": [
+      "Não fazer chamadas HTTP (isso é data-access-* / provider remoto).",
+      "Não conhecer DTOs específicos de domínio (apenas generics T + column mapping).",
+      "Não aplicar regras de permissão (apenas recebe actions já filtradas/decididas).",
+      "Não decidir política de paginação do backend (apenas envia query state).",
+      "Não virar um “grid framework” infinito (evitar over-engineering)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-components",
+        "why": "Inputs, buttons, dropdowns, badges, empty state, pagination primitives."
+      },
+      {
+        "name": "ui-layout",
+        "why": "Frame/scroll containment e consistência visual."
+      },
+      {
+        "name": "ui-tokens",
+        "why": "Spacing/densidade/typography sem hardcode."
+      },
+      {
+        "name": "ui-theme",
+        "why": "Cores/states conforme tema."
+      },
+      {
+        "name": "error-model",
+        "why": "Estados de erro com StandardError e códigos padronizados."
+      },
+      {
+        "name": "@hub/observability/data-access (opcional)",
+        "why": "Telemetria: table.queryChange, table.error (sem dados sensíveis)."
+      },
+      {
+        "name": "storage-secure (recomendado)",
+        "why": "Persistência segura de preferências; gap já registrado."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/patterns-smart-table/src/lib/",
+      "files": [
+        {
+          "path": "smart-table.component.ts",
+          "purpose": "Componente principal: render + coordenação de estado/provider."
+        },
+        {
+          "path": "smart-table.component.html",
+          "purpose": "Template: header (filters/actions), table, pagination, states."
+        },
+        {
+          "path": "smart-table.component.scss",
+          "purpose": "Ajustes mínimos (densidade/sticky header) via tokens."
+        },
+        {
+          "path": "smart-table.model.ts",
+          "purpose": "Tipos: Column, Sort, Filter, QueryState, SelectionState, Actions."
+        },
+        {
+          "path": "smart-table.provider.ts",
+          "purpose": "Interfaces: DataProvider (local/remote), cancel/refresh, result shape."
+        },
+        {
+          "path": "providers/local.provider.ts",
+          "purpose": "Provider local: filtra/ordena/pagina em memória (pequenos datasets)."
+        },
+        {
+          "path": "providers/remote.provider.ts",
+          "purpose": "Provider remoto: delega query state (sem HttpClient direto; recebe fetch fn)."
+        },
+        {
+          "path": "smart-table.preferences.ts",
+          "purpose": "Persistência opcional de prefs (visibleColumns, density, pageSize)."
+        },
+        {
+          "path": "smart-table.a11y.ts",
+          "purpose": "Regras: aria table/grid, keyboard nav básico, focus management."
+        },
+        {
+          "path": "smart-table.util.ts",
+          "purpose": "Helpers: normalize state, merge filters, compare, memoize."
+        },
+        {
+          "path": "smart-table.spec.ts",
+          "purpose": "Testes: stateChange, provider integration, selection, error/empty/loading."
+        },
+        {
+          "path": "smart-table.stories.ts",
+          "purpose": "Storybook: local dataset, remote simulation, selection + bulk actions."
+        },
+        {
+          "path": "README.md",
+          "purpose": "Como usar: columns/provider, anti-patterns e limites."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir SmartTableQueryState serializável (page/pageSize/sort/filters).",
+      "Definir contrato de Column (key, header, cell renderer/template, sort/filter config).",
+      "Implementar DataProvider interface com cancel/refresh e retorno tipado (rows + total + meta).",
+      "Implementar provider local (para datasets pequenos) e provider remoto (recebe fetch fn).",
+      "Implementar SmartTableComponent: mantém estado reativo e solicita provider ao mudar query.",
+      "Implementar states: loading/empty/error e retry.",
+      "Implementar seleção (single/multi) com eventos e ações (row/bulk) via handlers externos.",
+      "Implementar preferências opcionais com storage seguro (visibleColumns/density/pageSize).",
+      "Adicionar a11y básica (aria roles + keyboard nav simples) e performance (trackBy; optional virtual scroll).",
+      "Criar Storybook com 3 cenários e testes mínimos cobrindo provider + selection + states."
+    ],
+    "acceptanceCriteria": [
+      "Sorting/Filtering/Pagination alteram query state e disparam load no provider.",
+      "Estados loading/empty/error são consistentes e possuem retry.",
+      "Seleção e ações (row/bulk) funcionam e emitem eventos corretos.",
+      "Provider local e remoto funcionam (remoto sem HttpClient direto).",
+      "Preferências opcionais persistem com chave namespaced (quando habilitado).",
+      "A11y básica implementada (foco/aria) e sem regressões óbvias.",
+      "Testes mínimos cobrem stateChange + provider + states + selection."
+    ],
+    "complexity": 5,
+    "estimate": {
+      "executionDays": 6,
+      "finalizationDays": 7
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Smart Table Patterns",
+          "goal": "Construir tabela reutilizável com query state e providers.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Query state (page/sort/filter)",
+            "Provider pattern (local vs remote)",
+            "Seleção e ações em lote"
+          ]
+        },
+        {
+          "title": "Performance & A11y for Tables",
+          "goal": "Garantir performance e acessibilidade em listas grandes.",
+          "level": "Intermediário",
+          "knowledge": [
+            "trackBy e memoization",
+            "Keyboard navigation básico",
+            "Estados (loading/empty/error) e UX consistente"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar PatternsSmartTable: tabela reutilizável com columns definidas, query state (page/sort/filter), DataProvider local e remoto (remoto recebe fetch fn, sem HttpClient direto), seleção single/multi, ações row/bulk, estados loading/empty/error com retry, preferências opcionais (colunas/densidade) e testes mínimos + stories.",
+      "generationSteps": [
+        "Criar models (columns/query state/selection/actions).",
+        "Criar interface DataProvider e providers local/remote.",
+        "Criar componente + template com header/filtros/tabela/pagination.",
+        "Implementar states (loading/empty/error) e retry.",
+        "Implementar seleção e eventos.",
+        "Implementar prefs opcionais + stories + testes mínimos."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Patterns",
+        "Table",
+        "Performance",
+        "A11y"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta limites (quando usar provider local vs remoto)",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem HttpClient direto no pattern (remoto via fetch fn/data-access)",
+        "A11y básica revisada (aria/focus)",
+        "Stories cobrindo local + remoto + seleção"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Storybook: 3 cenários (local, remoto simulado, seleção+b bulk)",
+        "Notas de decisão (persistência de prefs e escopo da chave)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do patterns-smart-table)",
+        "README com exemplos (local/remote) e anti-patterns",
+        "Checklist: integração com access-decision para filtrar actions"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:ui",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/patterns-smart-table/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

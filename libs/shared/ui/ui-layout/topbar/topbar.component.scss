@@ -1,0 +1,36 @@
+// src\app\lib\ui-layout\topbar\topbar.component.scss
+
+.ui-topbar {
+  display: flex;
+  align-items: center;
+  height: var(--layout-topbar-height, 56px);
+  padding: 0 var(--spacing-md);
+  background: var(--color-surface-base);
+  border-bottom: var(--layout-border-width, 1px) solid var(--color-border-default);
+  z-index: var(--z-index-sticky);
+
+  &--sticky {
+    position: sticky;
+    top: 0;
+  }
+
+  &__slot {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+
+    &--left {
+      flex: 1;
+    }
+
+    &--center {
+      flex: 1;
+      justify-content: center;
+    }
+
+    &--right {
+      flex: 1;
+      justify-content: flex-end;
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "ContextService": {
+    "kind": "frontend",
+    "key": "ContextService",
+    "title": "ContextService",
+    "summary": "Facade do Access Layer para contexto ativo (tenant/cliente/projeto/ambiente): controla snapshot/stream, troca de contexto, invalidação de caches e notificação para navegação/flags/decisions.",
+    "function": "Centralizar o estado do contexto ativo do Hub (tenant/cliente/projeto/ambiente) e padronizar a troca de contexto. Expor API reativa (context$) e operações (setContext/clear) com side-effects controlados: invalidar caches dependentes (flags, navigation, access decision) e emitir eventos de ciclo de vida. Evita que Shell e Tools implementem “context state” localmente.",
+    "whenRuns": [
+      "No bootstrap do Hub (definir contexto padrão ou restaurar do storage).",
+      "Quando usuário troca contexto via UI (Topbar/selector).",
+      "Quando uma rota/tool exige contexto mínimo (guards/decision).",
+      "Quando precisa invalidar caches derivados (flags/menu/permissions)."
+    ],
+    "inputs": [
+      {
+        "name": "StorageSecure (opcional)",
+        "detail": "Persistir contexto selecionado (scoped + TTL) para restore."
+      },
+      {
+        "name": "RuntimeConfig",
+        "detail": "Defaults por ambiente e restrições (ex.: contexto obrigatório)."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Eventos mínimos: context.changed, context.restored (sem PII)."
+      },
+      {
+        "name": "SessionService",
+        "detail": "Para validar se o contexto é compatível com sessão/claims (quando aplicável)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "context$()",
+        "detail": "Stream do contexto ativo (ContextLite) para Shell/Tools."
+      },
+      {
+        "name": "snapshot()",
+        "detail": "Snapshot do contexto atual."
+      },
+      {
+        "name": "setContext()",
+        "detail": "Troca de contexto com validação e invalidação de derivados."
+      },
+      {
+        "name": "clearContext()",
+        "detail": "Limpa contexto e força UI a selecionar novamente (quando exigido)."
+      },
+      {
+        "name": "onContextChanged",
+        "detail": "Hook/event para consumidores invalidarem caches (opcional; preferir reatividade)."
+      }
+    ],
+    "responsibilities": [
+      "Ser a fonte única do contexto ativo no frontend.",
+      "Padronizar troca de contexto com validação e eventos.",
+      "Persistir/restaurar contexto de forma segura quando configurado.",
+      "Emitir sinal de invalidação para camadas derivadas (flags/nav/decision).",
+      "Evitar que cada tool invente “context state” próprio."
+    ],
+    "nonResponsibilities": [
+      "Não decidir permissões/policies (isso é access-decision).",
+      "Não montar menu (isso é NavigationService).",
+      "Não avaliar flags (isso é FeatureFlagService/feature-flags).",
+      "Não fazer chamadas HTTP diretas para “listar contextos” (isso é data-access).",
+      "Não guardar PII no contexto (usar apenas ids/keys)."
+    ],
+    "dependencies": [
+      {
+        "name": "error-model",
+        "why": "Erros: ContextRequired, InvalidContext, ContextNotAllowed."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Telemetria mínima e troubleshooting."
+      },
+      {
+        "name": "storage-secure (recomendado)",
+        "why": "Persistência segura do contexto (restore on boot)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/access-layer/src/lib/context/",
+      "files": [
+        {
+          "path": "context.service.ts",
+          "purpose": "Facade: context$ / snapshot / setContext / clearContext + invalidation."
+        },
+        {
+          "path": "context.model.ts",
+          "purpose": "Tipos: ContextLite, ContextKey, EnvironmentKey e validações."
+        },
+        {
+          "path": "context.storage.ts",
+          "purpose": "Persistência opcional via storage-secure (scoped + TTL)."
+        },
+        {
+          "path": "context.validation.ts",
+          "purpose": "Valida regras mínimas (required fields, allowlist, compatibilidade com env)."
+        },
+        {
+          "path": "context.spec.ts",
+          "purpose": "Testes: set/clear, restore, invalidação e eventos mínimos."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir ContextLite com apenas ids/keys necessários (sem PII).",
+      "Implementar context$ e snapshot com estado reativo.",
+      "Implementar restore (se storage habilitado) no bootstrap do Shell.",
+      "Implementar setContext com validação e emissão de evento context.changed.",
+      "Implementar clearContext para flows onde contexto é obrigatório.",
+      "Criar testes: troca de contexto, invalidação, restore e validação."
+    ],
+    "acceptanceCriteria": [
+      "Shell usa ContextService como fonte única (sem contexto local duplicado).",
+      "Troca de contexto dispara recomputes (flags/menu/decision) sem refresh.",
+      "Contexto persistido (se habilitado) restaura corretamente no boot.",
+      "Sem HttpClient direto e sem PII em contexto.",
+      "Testes mínimos cobrindo set/clear/restore."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Context in Hub Platforms",
+          "goal": "Modelar contexto ativo e troca com invalidation correta.",
+          "level": "Base",
+          "knowledge": [
+            "ContextLite",
+            "Reatividade",
+            "Invalidação de derivados"
+          ]
+        },
+        {
+          "title": "Consumer Patterns (Shell + Tools)",
+          "goal": "Consumir contexto via Access Layer sem duplicar estado.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Context required flows",
+            "Persistência segura",
+            "Integração com menu/guards"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ContextService (Access Layer): context$+snapshot+setContext+clearContext, ContextLite sem PII, persistência opcional via storage-secure, validação e testes mínimos (set/clear/restore).",
+      "generationSteps": [
+        "Criar model e validação.",
+        "Criar service reativo e storage opcional.",
+        "Criar testes mínimos.",
+        "Documentar: invalidação de derivados por context change."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Access Layer"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "ContextLite sem PII",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Troca de contexto invalida derivados (documentado)",
+        "Testes mínimos incluídos"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: troca de contexto reflete em menu/visibilidade sem refresh"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ContextService)",
+        "Guia: ContextLite e troca de contexto (invalidation contract)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/access-layer/jest.config.ts"
+      }
+    }
+  }
+}

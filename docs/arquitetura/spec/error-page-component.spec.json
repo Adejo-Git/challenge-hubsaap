@@ -1,0 +1,206 @@
+{
+  "ErrorPageComponent": {
+    "kind": "frontend",
+    "key": "ErrorPageComponent",
+    "title": "ErrorPageComponent",
+    "summary": "Porto seguro do Hub: página terminal e dinâmica para falhas de autenticação, permissão, rota inexistente e erro crítico, com observabilidade e ações guiadas.",
+    "function": "Componente Shared UI (Design System) usado como destino padrão quando a navegação ou execução falha (401/403/404/500). Renderiza um estado terminal, dinâmico por tipo de erro, com mensagens seguras e CTAs padronizados. É o ponto de convergência para erros globais vindos de Guards (Access Layer) e HTTP Interceptor (Shared Infra), e registra automaticamente o evento no ObservabilityService com correlationId e URL.",
+    "whenRuns": [
+      "Quando um AuthGuard/RoleGuard/PolicyGuard falha e o Shell redireciona para a rota de erro.",
+      "Quando um HTTP Interceptor captura erro global (ex.: 401/403/500) e redireciona para a rota de erro.",
+      "Quando ocorre navegação para rota inexistente (404) e o Shell resolve para a rota de erro.",
+      "Quando uma Tool é desmontada por decisão do Shell (deny) e o usuário é encaminhado ao “porto seguro”."
+    ],
+    "inputs": [
+      {
+        "name": "type: 'auth' | 'permission' | 'not-found' | 'crash'",
+        "detail": "Define o estado terminal a ser renderizado e o conjunto de CTAs disponíveis."
+      },
+      {
+        "name": "details: ErrorModel",
+        "detail": "Modelo de erro padronizado contendo code/status, message segura, correlationId, url e metadados redigidos."
+      },
+      {
+        "name": "Router state (url)",
+        "detail": "URL atual/pretendida para exibir contexto e registrar telemetria (sem expor dados sensíveis)."
+      },
+      {
+        "name": "UiFeedback / UiTokens / UiIcons",
+        "detail": "Primitives do design system para garantir consistência visual e acessibilidade."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "actionTaken: EventEmitter<void>",
+        "detail": "Notifica o Shell que o usuário acionou o CTA principal (ex.: relogar/voltar/solicitar acesso/tentar novamente)."
+      },
+      {
+        "name": "Ações de navegação",
+        "detail": "Dispara navegações via Router (ex.: ir para login, voltar ao dashboard) sempre guiadas pelo Shell/rotas do Hub."
+      },
+      {
+        "name": "Registro de telemetria",
+        "detail": "trackError({ code, correlationId, url, type }) no ObservabilityService no init."
+      }
+    ],
+    "responsibilities": [
+      "Ser o destino padrão (“porto seguro”) para falhas globais de navegação/execução do frontend.",
+      "Renderizar estados terminais dinâmicos por tipo: auth (401), permission (403), not-found (404), crash (500).",
+      "Exibir mensagens seguras e orientadas ao usuário (sem detalhes técnicos/PII).",
+      "Exibir Correlation ID quando presente (essencial para suporte) — especialmente em crash/500.",
+      "Disparar CTAs padronizados (Login, Solicitar Acesso, Voltar ao Dashboard, Tentar Novamente) sem lógica de domínio.",
+      "Registrar automaticamente a ocorrência no ObservabilityService no ngOnInit, com code/correlationId/url."
+    ],
+    "dependencies": [
+      {
+        "name": "Shared UI / Design System",
+        "why": "Base visual e componentes de feedback (UiFeedback), tokens, ícones e padrões de acessibilidade."
+      },
+      {
+        "name": "Shared Infra / Data",
+        "why": "ObservabilityService para trackError e correlação mínima (sem payload sensível)."
+      },
+      {
+        "name": "Shared Contracts",
+        "why": "ErrorModel como contrato de entrada seguro e estável."
+      },
+      {
+        "name": "Angular Router",
+        "why": "Navegação para login/dashboard e leitura de URL/route data."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-feedback/src/lib/components/error-page/",
+      "files": [
+        {
+          "path": "error-page.component.ts",
+          "purpose": "Resolve o modelo de view (por type/status), chama observability.trackError() no init e emite actionTaken."
+        },
+        {
+          "path": "error-page.component.html",
+          "purpose": "Template com estados (auth/permission/not-found/crash), CTAs e render seguro de correlationId."
+        },
+        {
+          "path": "error-page.component.scss",
+          "purpose": "Ajustes mínimos e variantes visuais alinhadas ao tema."
+        },
+        {
+          "path": "error-page.component.spec.ts",
+          "purpose": "Testes: render por type, exibição de correlationId, ação de CTA e trackError chamado."
+        },
+        {
+          "path": "error-page.view-model.ts",
+          "purpose": "Mapeamento type/status -> textos/ícones/CTAs (sem domínio)."
+        },
+        {
+          "path": "index.ts",
+          "purpose": "Exports públicos (API) para consumo por Shell/rotas do Hub."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar input type com valores: 'auth' | 'permission' | 'not-found' | 'crash'.",
+      "Aceitar details: ErrorModel e garantir redaction (exibir apenas campos seguros).",
+      "Derivar um ViewModel com: title, message, icon, primaryCta, secondaryCta, showCorrelationId.",
+      "No ngOnInit, chamar observability.trackError({ code: details.code || details.status, correlationId: details.correlationId, url: details.url || router.url, type }).",
+      "Implementar CTAs: (auth) ir para login; (permission) “solicitar acesso” (navegação para fluxo/rota do Hub); (not-found) voltar ao dashboard; (crash) tentar novamente/voltar.",
+      "Emitir actionTaken ao executar o CTA principal para permitir que o Shell faça pós-ação (ex.: limpar estado, registrar métrica, reset de navegação).",
+      "Garantir acessibilidade: foco inicial no título, aria-live se houver texto dinâmico e botões com labels claras."
+    ],
+    "acceptanceCriteria": [
+      "Renderiza corretamente os 4 tipos (auth/permission/not-found/crash) com mensagem e CTA correspondente.",
+      "Exibe Correlation ID quando fornecido em details, especialmente para crash/500.",
+      "Chama observability.trackError no ngOnInit com code/correlationId/url/type (sem payload sensível).",
+      "Não depende de AccessDecisionService/PolicyEngine/Guards (não toma decisão, apenas exibe).",
+      "Pode ser usado por Shell e por interceptors/guards via roteamento sem quebrar Nx boundaries.",
+      "Testes mínimos cobrindo: render por type, CTA dispara navegação/emit e trackError chamado."
+    ],
+    "complexity": 2,
+    "estimate": {
+      "executionDays": 2,
+      "finalizationDays": 3
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Global Error UX (Porto Seguro)",
+          "goal": "Criar páginas de falha globais com CTAs úteis e mensagens seguras.",
+          "level": "Base",
+          "knowledge": [
+            "Roteamento e error handling no Angular",
+            "Mensagens seguras (sem PII/stacktrace)",
+            "Estados terminais e UX guidance"
+          ]
+        },
+        {
+          "title": "Observability no Frontend",
+          "goal": "Registrar erros vistos pelo usuário com correlação mínima.",
+          "level": "Intermediário",
+          "knowledge": [
+            "trackError + correlationId",
+            "Semântica de eventos e redaction",
+            "Integração com interceptors/guards via Shell"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ErrorPageComponent (Shared UI) dinâmico por type ('auth'|'permission'|'not-found'|'crash'), recebendo ErrorModel com correlationId e registrando observability.trackError({code,correlationId,url,type}) no init. Incluir CTAs e testes mínimos.",
+      "generationSteps": [
+        "Criar view-model (type -> title/message/icon/ctas).",
+        "Criar template e estilos com variantes de estado.",
+        "Integrar ObservabilityService e Router (sem domínio).",
+        "Criar testes: render por type, correlationId visível, CTA emite actionTaken e trackError chamado.",
+        "Gerar snippets de como Guards/Interceptor redirecionam para esta rota (documentação)."
+      ],
+      "tags": [
+        "Shared UI",
+        "Error UX",
+        "Observability",
+        "Nx-safe",
+        "Terminal State"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "CTAs coerentes por tipo (auth/permission/not-found/crash)",
+        "Correlation ID aparece quando disponível",
+        "trackError no init (sem PII)",
+        "Sem dependência de AccessDecisionService/Guards/PolicyEngine",
+        "Boundaries passando (Nx enforce-module-boundaries)"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Print/registro do gate pass",
+        "Roteiro de teste: simular 401/403/404/500 e validar UI + correlationId",
+        "Registro de evento no ObservabilityService (exemplo de payload seguro)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Catálogo: ErrorPageComponent e seus 4 estados + CTAs",
+        "Playbook: padrões de mensagem e redaction para páginas de erro",
+        "Guia: como Guards/Interceptor devem redirecionar para o porto seguro"
+      ]
+    },
+    "nonResponsibilities": [
+      "Não tomar decisões de acesso (não usa AccessDecisionService/PolicyEngine).",
+      "Não executar retry real de requisições (apenas expõe CTA “tentar novamente”).",
+      "Não renderizar detalhes técnicos (stacktrace, headers, payloads sensíveis).",
+      "Não depender de Tool UI nem de Shell internals; é um componente reutilizável do Design System."
+    ],
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/ui-feedback/jest.config.ts"
+      }
+    }
+  }
+}

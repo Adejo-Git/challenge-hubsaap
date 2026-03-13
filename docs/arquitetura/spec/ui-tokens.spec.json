@@ -1,0 +1,181 @@
+{
+  "UiTokens": {
+    "kind": "frontend",
+    "key": "UiTokens",
+    "title": "UiTokens",
+    "summary": "Design tokens do Hub: fonte única de valores (spacing, radius, typography, z-index, motion) e semântica de cores (neutros/brand/status) para uso em Tailwind/CSS vars e componentes.",
+    "function": "Centralizar os tokens do design system do Hub em um formato consumível por Tailwind e/ou CSS variables. Define a semântica (ex.: color.surface, color.text, color.border, status.success) e os valores base (spacing scale, radius, shadows, typography). Evita hardcode e drift visual entre Shell e Tools.",
+    "whenRuns": [
+      "No build/compile do frontend (Tailwind config ou geração de CSS vars).",
+      "No runtime quando CSS vars são aplicadas (se a estratégia for CSS variables).",
+      "Quando ui-theme gera o tema a partir dos tokens.",
+      "Quando ui-components/ui-layout dependem de escalas e valores semânticos."
+    ],
+    "inputs": [
+      {
+        "name": "Brand palette",
+        "detail": "Paleta e diretrizes do Hub (brand/neutral/status), se existirem."
+      },
+      {
+        "name": "Tailwind config",
+        "detail": "Extensão de theme (spacing, colors, shadows) e naming semântico."
+      },
+      {
+        "name": "Accessibility requirements",
+        "detail": "Contraste mínimo, foco, estados, tokens de motion reduzido."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Token definitions",
+        "detail": "Estrutura de tokens (JSON/TS) e/ou CSS variables geradas."
+      },
+      {
+        "name": "Tailwind extension",
+        "detail": "Config ou preset para Tailwind consumir tokens semânticos."
+      },
+      {
+        "name": "Token contract",
+        "detail": "Chaves estáveis (ex.: --color-surface, --radius-md) para o DS."
+      }
+    ],
+    "responsibilities": [
+      "Ser fonte única dos valores do DS (sem hardcode em componentes).",
+      "Definir tokens semânticos e escalas (spacing/radius/typography/shadows/z-index).",
+      "Garantir consistência e estabilidade das chaves (evitar breaking changes).",
+      "Incluir tokens de acessibilidade (focus ring, contrast, reduced motion).",
+      "Habilitar consumo por Tailwind e/ou CSS vars."
+    ],
+    "nonResponsibilities": [
+      "Não aplicar tema em runtime (isso é ui-theme).",
+      "Não fornecer componentes (isso é ui-components/ui-layout).",
+      "Não implementar ícones/assets (isso é ui-icons-assets).",
+      "Não conter lógica de layout (isso é ui-layout).",
+      "Não implementar Storybook (isso é tooling-storybook)."
+    ],
+    "dependencies": [
+      {
+        "name": "ui-theme",
+        "why": "Tema usa tokens como fonte; tokens não dependem do tema."
+      },
+      {
+        "name": "i18n-core (recomendado)",
+        "why": "Não é obrigatório, mas ajuda em textos/typography guidelines; gap já registrado."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/ui-tokens/src/lib/",
+      "files": [
+        {
+          "path": "tokens.ts",
+          "purpose": "Definição dos tokens em TS (objeto imutável) com chaves semânticas."
+        },
+        {
+          "path": "tokens.model.ts",
+          "purpose": "Tipos: ColorScale, SemanticColors, SpacingScale, RadiusScale, TypographyTokens."
+        },
+        {
+          "path": "tokens.cssvars.ts",
+          "purpose": "Gerador/mapper de tokens → CSS variables (se aplicável)."
+        },
+        {
+          "path": "tailwind.preset.ts",
+          "purpose": "Preset Tailwind (ou helper) para mapear tokens semânticos no theme."
+        },
+        {
+          "path": "tokens.spec.ts",
+          "purpose": "Testes: chaves obrigatórias, consistência, contrast checks (básico)."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir o contrato semântico de tokens (nomes estáveis) para cor/surface/text/border/status.",
+      "Definir escalas: spacing, radius, typography (font sizes/line heights), shadows, z-index.",
+      "Criar mapeamento para CSS variables (opcional) e/ou preset Tailwind.",
+      "Incluir tokens de acessibilidade: focus ring, disabled opacity, reduced motion.",
+      "Criar testes mínimos para garantir chaves obrigatórias e coerência de escalas."
+    ],
+    "acceptanceCriteria": [
+      "Tokens cobrem cores semânticas + escalas essenciais (spacing/radius/typography/shadows).",
+      "Chaves são estáveis e documentadas (contrato do DS).",
+      "Tokens podem ser consumidos por Tailwind e/ou CSS vars sem duplicação.",
+      "Acessibilidade básica considerada (focus/contrast mínimo).",
+      "Testes mínimos validam chaves e coerência."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Design Tokens Foundations",
+          "goal": "Definir tokens semânticos e escalas reutilizáveis.",
+          "level": "Base",
+          "knowledge": [
+            "Tokens semânticos vs valores absolutos",
+            "Escalas (spacing/radius/typography)",
+            "Contrato estável de chaves"
+          ]
+        },
+        {
+          "title": "Tailwind + CSS Variables Strategy",
+          "goal": "Integrar tokens com Tailwind e CSS vars com governança.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Tailwind preset/theme extension",
+            "CSS variables e theming runtime",
+            "Testes de consistência/contraste (básico)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ui-tokens: tokens semânticos (surface/text/border/status) + escalas (spacing/radius/typography/shadows/z-index), preset Tailwind e/ou gerador CSS vars, com tipos e testes mínimos de chaves obrigatórias.",
+      "generationSteps": [
+        "Criar models e contrato de chaves.",
+        "Criar tokens.ts com escalas e cores semânticas.",
+        "Criar preset Tailwind e/ou cssvars mapper.",
+        "Criar testes mínimos (chaves e coerência)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Design System"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta contrato de chaves (tokens) e estratégia Tailwind/CSS vars",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem hardcode de cores em libs DS (apontar para tokens)",
+        "Testes de chaves obrigatórias"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: token aplicado em um componente (via Tailwind/CSS var) sem hardcode"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ui-tokens)",
+        "Guia: naming de tokens e como consumir em Tailwind"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/ui-tokens/jest.config.ts"
+      }
+    }
+  }
+}

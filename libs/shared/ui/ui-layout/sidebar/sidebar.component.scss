@@ -1,0 +1,28 @@
+// src\app\lib\ui-layout\sidebar\sidebar.component.scss
+
+.ui-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: var(--layout-sidebar-width, 240px);
+  height: 100%;
+  background: var(--color-surface-base);
+  border-right: var(--layout-border-width, 1px) solid var(--color-border-default);
+  transition: width var(--accessibility-motionBase, 200ms), transform var(--accessibility-motionBase, 200ms);
+  z-index: var(--z-index-dropdown);
+
+  &--collapsed {
+    width: var(--layout-sidebar-collapsed-width, 72px);
+  }
+
+  &--mobile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    transform: translateX(-100%);
+  }
+
+  &--mobile-open {
+    transform: translateX(0);
+  }
+}

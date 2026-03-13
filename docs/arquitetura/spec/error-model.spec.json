@@ -1,0 +1,184 @@
+{
+  "ErrorModel": {
+    "kind": "frontend",
+    "key": "ErrorModel",
+    "title": "ErrorModel",
+    "summary": "Modelo padronizado de erros no frontend: normaliza falhas (auth/permission/flag/http/validation) com codes e metadados seguros para UI, logs e decisões (401/403/404).",
+    "function": "Definir um contrato único para representar erros no frontend (incluindo origem, categoria, code, severidade, userMessage, technicalMessage safe e correlationId). Permite que Shell, SDKs e guards tratem erros de forma consistente, mapeiem denyReason para 401/403/404 e publiquem telemetria sem vazar dados sensíveis.",
+    "whenRuns": [
+      "Quando interceptors/SDKs normalizam erros HTTP/timeout/network.",
+      "Quando guards/AccessDecision precisam expressar denyReason padronizado.",
+      "Quando UI precisa renderizar erro global (toasts/painel/empty states) com mensagens consistentes.",
+      "Quando observability registra eventos de erro com correlationId e code."
+    ],
+    "inputs": [
+      {
+        "name": "Raw errors",
+        "detail": "Erros do Angular/HttpClient, exceptions internas, validation errors."
+      },
+      {
+        "name": "Deny reasons",
+        "detail": "Motivos de negação (unauthenticated/forbidden/notFound/flagOff/contextMissing)."
+      },
+      {
+        "name": "CorrelationId",
+        "detail": "Id de correlação (gerado no http-base/observability) para rastreio."
+      },
+      {
+        "name": "Localization (opcional)",
+        "detail": "Mapeamento code → userMessage (pt-BR etc.), se i18n-core existir."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "StandardError",
+        "detail": "Objeto padronizado (category, code, severity, userMessage, correlationId, detailsSafe)."
+      },
+      {
+        "name": "Mappers",
+        "detail": "Helpers para mapear HttpErrorResponse/Exception/DenyReason → StandardError."
+      },
+      {
+        "name": "UI-friendly shape",
+        "detail": "Estrutura compatível com NotificationService e páginas de erro."
+      }
+    ],
+    "responsibilities": [
+      "Padronizar categorias e codes (ex.: AUTH_EXPIRED, PERMISSION_DENIED, FLAG_DISABLED, HTTP_TIMEOUT).",
+      "Garantir que detalhes sejam “safe” (sem token/PII).",
+      "Ajudar no mapeamento determinístico para UX (401/403/404 e mensagens).",
+      "Permitir correlação e auditoria (correlationId, timestamp, source).",
+      "Ser leve e sem IO."
+    ],
+    "nonResponsibilities": [
+      "Não renderizar UI de erro (isso é ui-components/notification-service/pages).",
+      "Não fazer log/telemetria por si só (isso é @hub/observability/data-access).",
+      "Não implementar i18n completo (apenas suporta mapping opcional).",
+      "Não decidir políticas de segurança (apenas representa erro).",
+      "Não acoplar a backend específico (mantém shape genérico)."
+    ],
+    "dependencies": [
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Consumo do modelo padronizado para log/telemetria com correlação."
+      },
+      {
+        "name": "http-base",
+        "why": "Interceptors usam error-model para normalização de HttpErrorResponse."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/shared/error-model/src/lib/",
+      "files": [
+        {
+          "path": "error.model.ts",
+          "purpose": "Tipos: StandardError, ErrorCategory, ErrorCode, Severity, ErrorSource."
+        },
+        {
+          "path": "error.mappers.ts",
+          "purpose": "Mapeadores: fromHttp, fromException, fromDenyReason."
+        },
+        {
+          "path": "error.util.ts",
+          "purpose": "Helpers: sanitize(details), buildUserMessage, isRetryable."
+        },
+        {
+          "path": "error-model.spec.ts",
+          "purpose": "Testes: mapeamento HTTP/denyReason, sanitização, codes consistentes."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir categorias e codes mínimos (AUTH, PERMISSION, FLAGS, HTTP, VALIDATION, UNKNOWN).",
+      "Criar StandardError com fields “safe” e correlationId opcional.",
+      "Implementar mappers (HttpErrorResponse → StandardError; denyReason → StandardError).",
+      "Implementar sanitização: remover headers/tokens/PII e truncar payloads grandes.",
+      "Criar testes mínimos validando codes e sanitização."
+    ],
+    "acceptanceCriteria": [
+      "Todas as camadas (guards/interceptors/SDK) conseguem normalizar erros para StandardError.",
+      "Deny reasons mapeiam para erros coerentes e previsíveis (401/403/404).",
+      "Sanitização impede vazamento de dados sensíveis.",
+      "Sem IO/HttpClient na lib.",
+      "Testes mínimos cobrindo mappers e sanitização."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Standard Error Modeling",
+          "goal": "Padronizar erros para UI/telemetria sem vazar dados sensíveis.",
+          "level": "Base",
+          "knowledge": [
+            "Categorias e codes previsíveis",
+            "Sanitização de detalhes",
+            "Mapeamento denyReason → erro/UX"
+          ]
+        },
+        {
+          "title": "Error Handling Across Layers",
+          "goal": "Unificar tratamento de erro entre http-base, SDKs e guards.",
+          "level": "Intermediário",
+          "knowledge": [
+            "HttpErrorResponse mapping",
+            "Retryability e severidade",
+            "Correlação e troubleshooting"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar error-model: StandardError com categorias/codes/severidade, mappers (HttpErrorResponse/Exception/DenyReason), sanitização de detalhes e testes mínimos. Sem UI e sem IO.",
+      "generationSteps": [
+        "Criar types (StandardError, categories, codes).",
+        "Implementar mappers + sanitização.",
+        "Criar util de retryable/severity.",
+        "Criar testes mínimos (mapeamento + sanitização)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Security-first"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta categorias/codes e exemplos de uso",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sanitização revisada (sem token/PII)",
+        "Testes cobrindo mappers principais"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: 401/403/timeout normalizam para StandardError com code e correlationId",
+        "Notas de decisão (quais codes entram no MVP)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do error-model)",
+        "Guia: como normalizar erros em SDK/guards/interceptors",
+        "Playbook: troubleshooting por code/correlationId"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/error-model/jest.config.ts",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

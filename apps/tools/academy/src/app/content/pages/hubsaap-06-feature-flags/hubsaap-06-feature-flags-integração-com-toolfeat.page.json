@@ -1,0 +1,161 @@
+{
+  "schema": "academy.page.v1",
+  "schemaVersion": "1.0.0",
+  "pageId": "hubsaap-06-feature-flags-integração-com-toolfeat",
+  "meta": {
+    "title": "Integração com ToolFeatureFlags",
+    "summary": "Como tools declaram capabilities e gates no catálogo central, com práticas para consumo reativo e rollout auditável.",
+    "level": "Intermediario",
+    "tags": [
+      "feature-flags",
+      "rollout",
+      "gating",
+      "governance"
+    ],
+    "estimatedMinutes": 30
+  },
+  "alignment": {
+    "hubComponents": [
+      "feature-flags",
+      "tool-plugin",
+      "tool-contract",
+      "tool-registry",
+      "tool-data-access-sdk"
+    ],
+    "refSpecPaths": [],
+    "prerequisites": [
+      "hubsaap-06-feature-flags-namespace-por-toolkey",
+      "hubsaap-06-feature-flags-api-reativa-isenabledwa",
+      "hubsaap-06-feature-flags-governança-e-auditabili"
+    ],
+    "seeAlso": [
+      "hubsaap-06-feature-flags-defaults-vs-overrides"
+    ]
+  },
+  "sections": [
+    {
+      "type": "overview",
+      "content": {
+        "summary": "Este how-to descreve o caminho mínimo para uma tool declarar capabilities e gates no catálogo central, consumi-las de forma reativa e manter auditabilidade durante rollout.",
+        "keyTakeaway": "Declare flags no namespace `toolKey.featureKey`, inclua `owner` e `reasonCode`, e consuma via API reativa com fallback determinístico."
+      },
+      "anchor": "overview-integração-toolfeatureflags"
+    },
+    {
+      "type": "coreConcepts",
+      "content": {
+        "concepts": [
+          {
+            "term": "capability",
+            "definition": "Declaração da tool sobre comportamento condicional (ex.: feature que pode ser ativada).",
+            "exampleRef": "manifest snippet"
+          },
+          {
+            "term": "gate",
+            "definition": "Regra ou condição usada para habilitar a capability (por público, rollout, contexto).",
+            "exampleRef": "catalog entry"
+          },
+          {
+            "term": "namespace",
+            "definition": "Prefixo `toolKey.` para evitar colisões entre tools.",
+            "exampleRef": "academy.newExperience"
+          },
+          {
+            "term": "reasonCode",
+            "definition": "Código curto que explica o propósito do rollout para auditabilidade.",
+            "exampleRef": "experiment-2026-03"
+          }
+        ]
+      },
+      "anchor": "core-concepts-integração"
+    },
+    {
+      "type": "architectureContext",
+      "content": {
+        "affectedComponents": [
+          "libs/feature-flags",
+          "libs/tool-plugin",
+          "libs/tool-contract",
+          "libs/tool-registry",
+          "libs/tool-data-access-sdk"
+        ],
+        "description": "A tool declara capabilities no seu manifesto e registra entradas no catálogo central (ToolFeatureFlags). O UI/guards consomem via `featureFlags.isEnabled`/`watch`. Eventos de audit são emitidos pelo mecanismo de rollout.",
+        "invocationPoints": [
+          "tool manifest registration",
+          "catalog registration service",
+          "UI consumption (guards/components)",
+          "audit/event pipeline"
+        ]
+      },
+      "anchor": "architecture-context-integração"
+    },
+    {
+      "type": "implementationSteps",
+      "content": {
+        "steps": [
+          "Escolha key no namespace: `toolKey.featureKey` (ex.: `academy.newExperience`).",
+          "Adicione registro no catálogo ToolFeatureFlags com metadata: `key`, `owner`, `reasonCode`, `description`, `createdAt`.",
+          "Declare a capability no manifesto da tool (capabilities array) apontando para a mesma key.",
+          "Implemente consumo reativo no UI/guards usando `featureFlags.watch('toolKey.featureKey')` e um fallback determinístico.",
+          "Registre eventos de audit no ponto de decisão com `reasonCode` e contexto (user, tenant).",
+          "Adicione testes unitários para fallback e integração que verifiquem que a UI respeita `isEnabled` e assincronia." 
+        ],
+        "estimatedTimeMinutes": 30
+      },
+      "anchor": "implementation-steps-integração"
+    },
+    {
+      "type": "codeExamples",
+      "content": {
+        "snippets": [
+          {
+            "title": "Catálogo — registro JSON",
+            "language": "json",
+            "code": "{\n  \"key\": \"academy.newExperience\",\n  \"owner\": \"academy\",\n  \"reasonCode\": \"experiment-2026-03\",\n  \"description\": \"Habilita novo fluxo de onboarding\",\n  \"createdAt\": \"2026-03-09T00:00:00Z\"\n}"
+          },
+          {
+            "title": "Manifesto da tool — capabilities (exemplo curto)",
+            "language": "json",
+            "code": "{\n  \"capabilities\": [\n    {\n      \"key\": \"academy.newExperience\",\n      \"description\": \"Nova experiência de onboarding curta\",\n      \"owner\": \"academy\"\n    }\n  ]\n}"
+          },
+          {
+            "title": "Consumo reativo (Angular/TS)",
+            "language": "ts",
+            "code": "const enabled$ = featureFlags.watch('academy.newExperience');\nenabled$.subscribe(on => { if (on) showNewFlow(); });"
+          }
+        ]
+      },
+      "anchor": "code-examples-integração"
+    },
+    {
+      "type": "checklist",
+      "content": {
+        "items": [
+          "Nome no namespace `toolKey.featureKey`",
+          "Registro no catálogo com `owner` e `reasonCode`",
+          "Fallback determinístico implementado (default off/explicit)",
+          "Consumo via API reativa (`watch`/`isEnabled`)",
+          "Eventos de audit registrados com `reasonCode`",
+          "Testes automatizados cobrindo fallback e comportamento reativo",
+          "Documentar owner e rollback plan no catálogo"
+        ]
+      },
+      "anchor": "checklist-integração"
+    },
+    {
+      "type": "resources",
+      "content": {
+        "internalSpecs": [],
+        "prerequisiteLessons": [
+          "hubsaap-06-feature-flags-namespace-por-toolkey",
+          "hubsaap-06-feature-flags-api-reativa-isenabledwa",
+          "hubsaap-06-feature-flags-governança-e-auditabili"
+        ],
+        "seeAlso": [
+          "hubsaap-06-feature-flags-defaults-vs-overrides"
+        ]
+      },
+      "anchor": "resources-integração"
+    }
+  ]
+}

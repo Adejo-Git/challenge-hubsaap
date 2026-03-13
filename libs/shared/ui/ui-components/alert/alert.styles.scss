@@ -1,0 +1,98 @@
+// src\app\lib\ui-components\alert\alert.styles.scss
+
+.ui-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: calc(var(--spacing-xs) / 4) solid transparent;
+
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  line-height: 1.4;
+
+  color: var(--color-text-primary);
+}
+
+/* =====================
+   VARIANTS
+===================== */
+
+.ui-alert--info {
+  background-color: var(--color-surface-subtle);
+  border-color: var(--color-status-info);
+}
+
+.ui-alert--success {
+  background-color: var(--color-status-success);
+  border-color: var(--color-status-success);
+  color: var(--color-text-inverse);
+}
+
+.ui-alert--warning {
+  background-color: var(--color-status-warning);
+  border-color: var(--color-status-warning);
+  color: var(--color-text-primary);
+}
+
+.ui-alert--error {
+  background-color: var(--color-status-error);
+  border-color: var(--color-status-error);
+  color: var(--color-text-inverse);
+}
+
+/* =====================
+   CONTENT
+===================== */
+
+.ui-alert__content {
+  flex: 1;
+}
+
+.ui-alert__title {
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.ui-alert__message {
+  font-size: var(--font-size-md);
+}
+
+/* =====================
+   ICON
+===================== */
+
+.ui-alert__icon {
+  font-size: var(--line-height-sm);
+  line-height: 1;
+  margin-top: calc(var(--spacing-xs) / 2);
+}
+
+/* =====================
+   DISMISS
+===================== */
+
+.ui-alert__close {
+  cursor: pointer;
+  opacity: 0.6;
+  margin-left: var(--spacing-sm);
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+/* =====================
+   SIZES
+===================== */
+
+.ui-alert--sm {
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.ui-alert--md {
+  padding: var(--spacing-md);
+}

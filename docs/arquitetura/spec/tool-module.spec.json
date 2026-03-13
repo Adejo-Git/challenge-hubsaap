@@ -1,0 +1,211 @@
+{
+  "ToolModule": {
+    "kind": "frontend",
+    "key": "ToolModule",
+    "title": "ToolModule",
+    "summary": "Contrato de empacotamento da Tool no Hub: define o entrypoint Angular (lazy) e registra rotas/metadata/flags/permissions conforme o padrão do Tool Plugin Contract.",
+    "function": "Ser o entrypoint padronizado de cada Tool para o Hub. Expõe um módulo (ou bundle standalone equivalente) carregável via lazy loading, agregando Tool Routes, ToolRootComponent e os metadados obrigatórios (menu, flags, permission map). O Shell nunca depende de implementações internas — apenas do contrato publicado pelo ToolModule.",
+    "whenRuns": [
+      "Quando o Router do Shell resolve a rota /tools/<toolKey> e executa o lazy load.",
+      "Quando o Hub valida se a tool existe e está habilitada (registry/flags/permissions) antes de ativar a rota.",
+      "Durante o bootstrap interno da tool (init do ToolRootComponent)."
+    ],
+    "inputs": [
+      {
+        "name": "ToolKey",
+        "detail": "Identificador da tool (ex.: \"pip\", \"lbc\", etc.) usado para roteamento e registro."
+      },
+      {
+        "name": "Tool Routes",
+        "detail": "Definição das rotas internas da tool (children routes) sob /tools/<toolKey>."
+      },
+      {
+        "name": "ToolMenuMetadata",
+        "detail": "Metadados mínimos para menu: label, icon, ordem, grupos, deep links principais."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "detail": "Lista/mapa de flags da tool e requisitos mínimos para habilitar rotas/capacidades."
+      },
+      {
+        "name": "ToolPermissionMap",
+        "detail": "Mapa de permissões necessárias por rota/capacidade (entrada/visualização/ação)."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Lazy entrypoint",
+        "detail": "Artefato carregável via router lazy (loadChildren / loadComponent)."
+      },
+      {
+        "name": "Tool contract exports",
+        "detail": "Exports padronizados: routes + metadata + flags + permission map."
+      },
+      {
+        "name": "ToolRootComponent renderizado",
+        "detail": "Componente raiz da tool que recebe o contexto do Hub e renderiza as rotas internas."
+      }
+    ],
+    "responsibilities": [
+      "Empacotar e expor a tool como plugin carregável por lazy loading.",
+      "Publicar o contrato obrigatório (rotas + menu metadata + flags + permission map).",
+      "Garantir que o entrypoint não acople o Shell a detalhes internos da tool.",
+      "Assegurar que rotas internas sigam convenções (paths relativos, guards locais apenas quando necessário).",
+      "Manter o plugin “registrável”: metadados são determinísticos e versionáveis."
+    ],
+    "nonResponsibilities": [
+      "Não implementar decisões de acesso do Hub (isso é Access Layer / RouteGuards).",
+      "Não fazer IO direto (sem HttpClient) — usar Tool Data-Access SDK quando necessário.",
+      "Não registrar tool no Hub diretamente (quem registra é ToolRegistry/Access Layer).",
+      "Não definir UI global do Hub (layout é do Shell/UI Layout).",
+      "Não concentrar lógica de negócio: apenas entrypoint e wiring de contrato."
+    ],
+    "dependencies": [
+      {
+        "name": "Tool Routes",
+        "why": "Define navegação interna da tool sob /tools/<toolKey>."
+      },
+      {
+        "name": "ToolRootComponent",
+        "why": "Componente raiz renderizado quando a tool é carregada."
+      },
+      {
+        "name": "ToolMenuMetadata",
+        "why": "O Hub precisa disso para montar navegação segura e consistente."
+      },
+      {
+        "name": "ToolFeatureFlags",
+        "why": "Habilitação de capacidades/rotas por ambiente/contexto."
+      },
+      {
+        "name": "ToolPermissionMap",
+        "why": "Integração com decisão de acesso para entrada/visualização/ações."
+      },
+      {
+        "name": "ToolContextAdapter",
+        "why": "Adapter para consumir contexto do Hub e traduzir para o modelo interno da tool (referência externa/emerald)."
+      },
+      {
+        "name": "ToolEvents",
+        "why": "Canal padronizado de eventos/telemetria/comunicação tool↔hub (dependência externa/slate)."
+      },
+      {
+        "name": "Tool Data-Access SDK",
+        "why": "Camada de acesso a dados padronizada (dependência externa/slate) quando a tool precisa IO."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "apps/tools/<toolKey>/src/app/tool-module/",
+      "files": [
+        {
+          "path": "tool.module.ts",
+          "purpose": "Entrypoint: agrega rotas + root + exports do contrato (metadata/flags/permissions)."
+        },
+        {
+          "path": "tool.contract.ts",
+          "purpose": "Exports padronizados do contrato (ToolMenuMetadata/ToolFeatureFlags/ToolPermissionMap)."
+        },
+        {
+          "path": "tool.routes.ts",
+          "purpose": "Declara as rotas internas (children) da tool."
+        },
+        {
+          "path": "tool.module.spec.ts",
+          "purpose": "Testes: exports do contrato e integridade do lazy entrypoint."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Criar o entrypoint lazy (ToolModule) por tool (um por /tools/<toolKey>).",
+      "Definir e exportar Tool Routes (children) a partir de tool.routes.ts.",
+      "Definir e exportar ToolMenuMetadata (label/icon/order/group/deepLinks).",
+      "Definir e exportar ToolFeatureFlags (flags mínimas por rota/capacidade).",
+      "Definir e exportar ToolPermissionMap (permissions por rota/capacidade).",
+      "Referenciar ToolRootComponent como container principal da tool (router-outlet interno).",
+      "Adicionar teste mínimo garantindo que os exports obrigatórios existem e são consistentes."
+    ],
+    "acceptanceCriteria": [
+      "ToolModule é carregável via lazy pelo Router do Shell.",
+      "Contrato publicado contém: routes + menu metadata + feature flags + permission map.",
+      "Não há dependência do Shell para componentes internos além do contrato.",
+      "Sem HttpClient direto no entrypoint.",
+      "Testes mínimos validando integridade do contrato."
+    ],
+    "complexity": 3,
+    "estimate": {
+      "executionDays": 3,
+      "finalizationDays": 4
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Tool Plugin Contract (Entrypoint)",
+          "goal": "Empacotar uma tool como plugin lazy com contrato completo (routes/metadata/flags/permissions).",
+          "level": "Base",
+          "knowledge": [
+            "Angular lazy loading (module vs standalone)",
+            "Contratos exportáveis e versionamento",
+            "Separação Shell vs Tool (boundary rules)"
+          ]
+        },
+        {
+          "title": "Roteamento interno de Tools",
+          "goal": "Modelar rotas internas sem acoplar o Hub e mantendo guardrails.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Router children routes e padrões de URL",
+            "Fallbacks internos da tool",
+            "Convivência com guards do Hub"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar ToolModule (plugin contract) para uma tool do Hub: entrypoint lazy, exports do contrato (ToolRoutes, ToolMenuMetadata, ToolFeatureFlags, ToolPermissionMap) e wiring do ToolRootComponent. Sem HttpClient direto. Entregar arquivos + teste mínimo de integridade.",
+      "generationSteps": [
+        "Gerar estrutura (tool.module.ts, tool.contract.ts, tool.routes.ts, spec).",
+        "Implementar exports obrigatórios do contrato.",
+        "Wiring do ToolRootComponent e router-outlet interno.",
+        "Criar teste mínimo garantindo presença/consistência dos exports."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Plugin Contract"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR define claramente o toolKey e exports do contrato",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Contrato completo (routes/metadata/flags/permissions)",
+        "Sem HttpClient no entrypoint"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Roteiro: tool carrega via lazy e rotas internas funcionam",
+        "Print/nota do contrato exportado (menu/flags/permissions)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do ToolModule)",
+        "Guia: como criar uma tool pluginável no Hub",
+        "Exemplo de contrato versionado (tool.contract.ts)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shell",
+        "scope:tools"
+      ],
+      "jest": {
+        "runner": "jest",
+        "configPath": "apps/tools/jest.config.ts"
+      }
+    }
+  }
+}

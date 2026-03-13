@@ -1,0 +1,15 @@
+// src\app\lib\ui-layout\content-frame\content-frame.component.scss
+
+.ui-content-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0; // importante para scroll em layouts flex
+
+  &--padded {
+    padding: var(--spacing-lg);
+  }
+
+  &--scroll {
+    overflow: auto;
+  }
+}

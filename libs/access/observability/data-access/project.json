@@ -1,0 +1,30 @@
+{
+  "name": "observability-data-access",
+  "root": "libs/access/observability/data-access",
+  "sourceRoot": "libs/access/observability/data-access/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/out-tsc"],
+      "options": {
+        "command": "tsc -p libs/access/observability/data-access/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/access/observability/data-access/jest.config.js",
+        "passWithNoTests": false
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/access/observability/data-access/src --ext .ts"
+      }
+    }
+  },
+  "tags": ["type:shared", "scope:shared", "platform:frontend"]
+}

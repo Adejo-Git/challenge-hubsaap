@@ -1,0 +1,71 @@
+// src\app\lib\ui-components\link\link.styles.scss
+
+.ui-link {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+
+  transition:
+    color var(--accessibility-motionBase) ease,
+    text-decoration-color var(--accessibility-motionBase) ease,
+    opacity var(--accessibility-motionBase) ease;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: var(--accessibility-focusRing-width) solid var(--accessibility-focusRing-color);
+    outline-offset: var(--accessibility-focusRing-offset);
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  &.is-disabled {
+    opacity: var(--accessibility-disabledOpacity);
+    pointer-events: none;
+    cursor: default;
+  }
+}
+
+/* =====================
+   VARIANTS
+===================== */
+
+.ui-link--primary {
+  color: var(--color-brand-primary);
+}
+
+.ui-link--danger {
+  color: var(--color-status-error);
+}
+
+.ui-link--muted {
+  color: var(--color-text-secondary);
+}
+
+/* =====================
+   SIZES
+===================== */
+
+.ui-link--sm {
+  font-size: var(--font-size-sm);
+}
+
+.ui-link--md {
+  font-size: var(--font-size-md);
+}
+
+.ui-link--lg {
+  font-size: var(--font-size-lg);
+}

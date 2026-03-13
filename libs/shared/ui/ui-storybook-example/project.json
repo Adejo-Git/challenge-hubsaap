@@ -1,0 +1,40 @@
+{
+  "name": "ui-storybook-example",
+  "root": "libs/shared/ui/ui-storybook-example",
+  "sourceRoot": "libs/shared/ui/ui-storybook-example/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx eslint libs/shared/ui/ui-storybook-example --ext .ts,.tsx"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/shared/ui/ui-storybook-example/jest.config.ts"
+      }
+    },
+    "storybook": {
+      "executor": "@nx/storybook:storybook",
+      "options": {
+        "config": {
+          "configFolder": "libs/shared/ui/ui-storybook-example/.storybook"
+        },
+        "port": 4401
+      }
+    },
+    "build-storybook": {
+      "executor": "@nx/storybook:build",
+      "options": {
+        "config": {
+          "configFolder": "libs/shared/ui/ui-storybook-example/.storybook"
+        },
+        "outputPath": "dist/storybook/ui-ui-storybook-example"
+      }
+    }
+  },
+  "tags": ["type:tool", "scope:ui-example"]
+}

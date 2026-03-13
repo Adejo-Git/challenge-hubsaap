@@ -1,0 +1,77 @@
+// src\app\lib\ui-components\widget\widget.styles.scss
+
+.ui-widget {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  min-height: calc(var(--spacing-3xl) * 7);
+
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+
+  box-shadow: var(--shadow-md);
+}
+
+/* =====================
+   STRUCTURE
+===================== */
+
+.ui-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ui-widget__title {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.ui-widget__icon {
+  font-size: var(--line-height-sm);
+  opacity: 0.7;
+}
+
+.ui-widget__value {
+  font-size: var(--line-height-xl);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.ui-widget__footer {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* =====================
+   VARIANTS
+===================== */
+
+.ui-widget--primary {
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+}
+
+.ui-widget--primary .ui-widget__title,
+.ui-widget--primary .ui-widget__footer {
+  color: var(--color-text-inverse);
+}
+
+.ui-widget--success {
+  background-color: var(--color-status-success);
+  color: var(--color-text-inverse);
+}
+
+.ui-widget--warning {
+  background-color: var(--color-status-warning);
+  color: var(--color-text-primary);
+}
+
+.ui-widget--danger {
+  background-color: var(--color-status-error);
+  color: var(--color-text-inverse);
+}

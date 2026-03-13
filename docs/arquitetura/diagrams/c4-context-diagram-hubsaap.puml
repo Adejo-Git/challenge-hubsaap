@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Context>
+
+title Hub SaaP — Frontend C4 Context Diagram
+
+LAYOUT_LEFT_RIGHT()
+
+Person(user, "Usuário da Plataforma", "Consultor, desenvolvedor, arquiteto, gestor ou operador que utiliza as Tools disponíveis no Hub SaaP.")
+
+System(frontend, "Hub SaaP Frontend", "Plataforma frontend responsável por bootstrap, navegação, contexto e hospedagem de Tools no Shell.")
+
+System_Ext(identity, "Identity / Session Platform", "Serviços de identidade, autenticação e sessão consumidos pelo frontend.")
+System_Ext(access, "Authorization / Access Platform", "Serviços que fornecem permissões avaliadas, capabilities, feature flags e visibilidade.")
+System_Ext(toolBackends, "Tool Backends", "Backends das Tools integradas ao Hub SaaP.")
+System_Ext(observability, "Observability Platform", "Capacidades de telemetria, logs e observabilidade consumidas pelo frontend.")
+
+Rel(user, frontend, "Navega, interage e utiliza Tools da plataforma", "HTTPS")
+Rel(frontend, identity, "Restaura sessão e consome estado de identidade", "HTTPS")
+Rel(frontend, access, "Consome decisões avaliadas de acesso e contexto", "HTTPS")
+Rel(frontend, toolBackends, "Consome APIs das Tools hospedadas", "HTTPS")
+Rel(frontend, observability, "Publica sinais de telemetria e observabilidade", "HTTPS")
+
+SHOW_LEGEND()
+@enduml

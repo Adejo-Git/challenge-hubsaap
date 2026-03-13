@@ -1,0 +1,125 @@
+{
+  "schema": "academy.page.v1",
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-03-06T00:00:00.000Z",
+  "page": {
+    "pageId": "hubsaap-06-feature-flags-fundamentos-de-feature-",
+    "trackId": "hubsaap-06-feature-flags",
+    "lessonId": "hubsaap-06-feature-flags-fundamentos-de-feature-",
+    "title": "Fundamentos de feature flags",
+    "level": "Intermediario",
+    "alignment": {
+      "hubComponents": [
+        "apps/tools/academy",
+        "libs/shared/feature-flags"
+      ],
+      "refSpecPaths": [
+        "docs/arquitetura/tools/academy/spec/section-templates.spec.json",
+        "docs/arquitetura/tools/academy/spec/layout-policy.spec.json",
+        "docs/arquitetura/tools/academy/spec/content-renderer.spec.json",
+        "docs/arquitetura/tools/academy/spec/content-contracts.spec.json",
+        "docs/arquitetura/tools/academy/spec/academy-tool-routes.spec.json",
+        "docs/arquitetura/tools/academy/spec/academy-tool-module.spec.json",
+        "docs/arquitetura/tools/academy/spec/academy-tool-contract.spec.json",
+        "docs/arquitetura/tools/academy/spec/academy-content-gateway.spec.json",
+        "docs/arquitetura/tools/academy/spec/academy-catalog-contracts.spec.json"
+      ]
+    },
+    "estimatedMinutes": 20,
+    "sections": [
+      {
+        "type": "overview",
+        "title": "Por que usar feature flags",
+        "summary": "Feature flags permitem deploys independentes, canary releases, rollbacks rápidos e experimentação controlada. Use para separar lançamento de entrega de código e gerenciar exposição por ambiente ou critério.",
+        "id": "overview"
+      },
+      {
+        "type": "coreConcepts",
+        "id": "core-concepts",
+        "items": [
+          {
+            "term": "flag",
+            "definition": "Um identificador booleano ou parametrizado que controla comportamento."
+          },
+          {
+            "term": "gate",
+            "definition": "Condição que avalia se uma flag está ativa para um contexto (user, env, percentage)."
+          },
+          {
+            "term": "rollout",
+            "definition": "Estratégia de exposição gradual (ex.: 10% -> 100%)."
+          },
+          {
+            "term": "namespace",
+            "definition": "Prefixo como `toolKey.featureKey` para evitar colisões."
+          }
+        ]
+      },
+      {
+        "type": "architectureContext",
+        "id": "architecture-context",
+        "bullets": [
+          "Flags são parte do catálogo de configuração do Hub e devem mapear para `toolKey.featureKey`.",
+          "Declaração: defaults no catálogo; overrides por environment/ops.",
+          "Consumo: libs compartilhadas em `libs/*` expõem APIs reativas para UI e services."
+        ],
+        "componentMappings": [
+          "apps/tools/academy (pages de conteúdo)",
+          "libs/shared/feature-flags (consumo e utilitários)"
+        ]
+      },
+      {
+        "type": "implementationSteps",
+        "id": "implementation-steps",
+        "steps": [
+          "1) Defina a flag no catálogo usando namespace: `yourTool.yourFeature` com default por environment.",
+          "2) Publique a configuração no serviço de catálogo (config store) e documente overrides esperados.",
+          "3) No código, consuma via API reativa (isEnabled/watch) em vez de checks síncronos dispersos.",
+          "4) Adicione testes unitários e um cenário de e2e que valide rollback e comportamento com override."
+        ],
+        "validationChecks": [
+          "Flag declarada com namespace",
+          "Testes cobrindo true/false/override",
+          "Planos de rollback descritos"
+        ]
+      },
+      {
+        "type": "codeExamples",
+        "id": "code-examples",
+        "examples": [
+          {
+            "language": "ts",
+            "description": "Consumo reativo e guard simples para UI",
+            "snippet": "import { featureFlags } from 'libs/shared/feature-flags';\\n\\nfeatureFlags.isEnabled('academy.newSearch').subscribe(enabled => {\\n  if(enabled) {\\n    // renderiza componente de busca avançada\\n    renderAdvancedSearch();\\n  }\\n});"
+          }
+        ]
+      },
+      {
+        "type": "checklist",
+        "id": "checklist",
+        "items": [
+          "Definir namespace `toolKey.featureKey`",
+          "Declarar default por environment",
+          "Documentar overrides e precedence",
+          "Implementar consumo via API reativa",
+          "Adicionar testes unitários e e2e",
+          "Planejar métricas e reason codes para auditabilidade"
+        ]
+      },
+      {
+        "type": "resources",
+        "id": "resources",
+        "specPaths": [],
+        "seeAlso": [
+          "hubsaap-06-feature-flags-defaults-vs-overrides",
+          "hubsaap-06-feature-flags-namespace-por-toolkey",
+          "hubsaap-06-feature-flags-api-reativa-isenabledwa"
+        ],
+        "internalPages": [],
+        "externalRefs": [
+          "(adicionar referências a specs do repo em docs/arquitetura quando disponíveis)"
+        ]
+      }
+    ]
+  }
+}

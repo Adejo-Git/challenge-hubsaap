@@ -1,0 +1,221 @@
+{
+  "HttpBase": {
+    "kind": "frontend",
+    "key": "HttpBase",
+    "title": "HttpBase",
+    "summary": "Base HTTP do frontend: interceptors comuns, correlação, headers de contexto e normalização de erro para padronizar chamadas em todas as tools/SDKs.",
+    "function": "Centralizar a infraestrutura HTTP: pipeline de interceptors (correlation, context headers, auth header via auth-interceptor), timeout/retry leve (quando aplicável), normalização de erro usando error-model e integração com @hub/observability/data-access. Garante que nenhuma tool precise reinventar transporte, correlação e padrões.",
+    "whenRuns": [
+      "Em toda chamada HTTP disparada por api-clients-sdk/tool-data-access-sdk/data-access-*.",
+      "Ao anexar correlationId e headers mínimos.",
+      "Ao normalizar erros e enviar telemetria de latência/erro/status.",
+      "Ao aplicar bypass/allowlist de domínios e rotas públicas."
+    ],
+    "inputs": [
+      {
+        "name": "HttpClient",
+        "detail": "Transporte Angular."
+      },
+      {
+        "name": "AuthSession/AuthInterceptor",
+        "detail": "Credenciais e regras de auth/bypass (via auth-interceptor)."
+      },
+      {
+        "name": "Context snapshot",
+        "detail": "Headers de contexto (tenant/project) quando aplicável (via adapters)."
+      },
+      {
+        "name": "Runtime Config",
+        "detail": "BaseUrl(s), allowlist/denylist, timeouts e toggles (OnPrem friendly)."
+      },
+      {
+        "name": "ErrorModel",
+        "detail": "Normalização de falhas em StandardError."
+      },
+      {
+        "name": "ObservabilityService",
+        "detail": "Telemetria de request (latência, status, error code) com correlação."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Interceptors chain",
+        "detail": "CorrelationInterceptor, ContextHeadersInterceptor, ErrorNormalizeInterceptor, etc."
+      },
+      {
+        "name": "CorrelationId",
+        "detail": "Id de correlação em header e disponível para logs."
+      },
+      {
+        "name": "Standardized HTTP errors",
+        "detail": "Erros normalizados para StandardError (error-model)."
+      },
+      {
+        "name": "Request telemetry",
+        "detail": "Eventos mínimos por request (sem payload sensível)."
+      }
+    ],
+    "responsibilities": [
+      "Gerar/aplicar correlationId por request (ou respeitar existente).",
+      "Anexar headers de contexto mínimos (quando disponíveis) sem acoplar tools.",
+      "Normalizar erros HTTP para error-model (StandardError).",
+      "Integrar com observability para registrar métricas (latência/status/error code) sem payload.",
+      "Aplicar regras configuráveis (allowlist/denylist, rotas públicas, timeout padrão)."
+    ],
+    "nonResponsibilities": [
+      "Não definir contratos de domínio (isso é api-clients-sdk/tool-data-access-sdk).",
+      "Não implementar cache complexo, batching ou circuit breaker (evitar over-engineering).",
+      "Não fazer logging de payloads sensíveis (nunca logar Authorization/body).",
+      "Não implementar refresh token complexo aqui (isso fica fora do interceptor base).",
+      "Não decidir UX (toasts/erro global é camada UI)."
+    ],
+    "dependencies": [
+      {
+        "name": "error-model",
+        "why": "Normalização de falhas e codes padronizados."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Telemetria por request e correlação."
+      },
+      {
+        "name": "auth-interceptor",
+        "why": "Parte do chain (auth header + bypass rules)."
+      },
+      {
+        "name": "auth-session",
+        "why": "Snapshot seguro para headers e correlação (indireto via auth-interceptor)."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/access/http-base/src/lib/",
+      "files": [
+        {
+          "path": "http-base.module.ts",
+          "purpose": "Providers do chain de interceptors e configuração global."
+        },
+        {
+          "path": "interceptors/correlation.interceptor.ts",
+          "purpose": "Gera/aplica correlationId; nunca loga dados sensíveis."
+        },
+        {
+          "path": "interceptors/context-headers.interceptor.ts",
+          "purpose": "Aplica headers de contexto (tenant/project) quando disponíveis."
+        },
+        {
+          "path": "interceptors/error-normalize.interceptor.ts",
+          "purpose": "Mapeia HttpErrorResponse → StandardError (error-model)."
+        },
+        {
+          "path": "http-base.config.ts",
+          "purpose": "Config: allowlist/denylist, timeouts, public routes, baseUrl."
+        },
+        {
+          "path": "http-base.util.ts",
+          "purpose": "Helpers: shouldIntercept, sanitize, header builders."
+        },
+        {
+          "path": "http-base.spec.ts",
+          "purpose": "Testes: correlationId, bypass, normalização de erro, headers de contexto."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir config global (allowlist/denylist, public routes, default timeout) via runtime-config.",
+      "Implementar CorrelationInterceptor: gerar correlationId (uuid/short id) e anexar header.",
+      "Implementar ContextHeadersInterceptor: ler snapshot de contexto (via adapter) e anexar headers mínimos.",
+      "Implementar ErrorNormalizeInterceptor: mapear HttpErrorResponse para StandardError via error-model.",
+      "Integrar ObservabilityService para registrar métricas (latência/status/error code) sem payload.",
+      "Compor chain junto do auth-interceptor (ordem previsível).",
+      "Criar testes mínimos para: correlationId, bypass, headers de contexto e normalização."
+    ],
+    "acceptanceCriteria": [
+      "Toda chamada HTTP recebe correlationId (quando aplicável) e telemetria mínima.",
+      "Headers de contexto são anexados quando disponíveis e não quebram endpoints públicos.",
+      "Erros HTTP são normalizados para StandardError (error-model).",
+      "Regras de bypass/allowlist evitam loops e vazamento de headers em domínios externos.",
+      "Testes mínimos cobrem chain e comportamento determinístico."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "HTTP Infrastructure in Angular",
+          "goal": "Criar chain de interceptors com correlação, contexto e normalização de erro.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Ordem de interceptors e efeitos colaterais",
+            "Bypass/public routes/allowlist",
+            "Testes com HttpTestingController + interceptors"
+          ]
+        },
+        {
+          "title": "Safe Telemetry & Correlation",
+          "goal": "Medir e rastrear requests sem expor dados sensíveis.",
+          "level": "Intermediário",
+          "knowledge": [
+            "CorrelationId headers",
+            "Sanitização de logs/telemetria",
+            "Mapeamento status/error code"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar http-base: module + chain de interceptors (correlation, context headers, error normalize), config com allowlist/public routes/timeouts, integração com observability e error-model, sem logs sensíveis, e testes mínimos.",
+      "generationSteps": [
+        "Criar config e module providers.",
+        "Implementar correlation interceptor.",
+        "Implementar context headers interceptor com adapter.",
+        "Implementar error normalize interceptor usando error-model.",
+        "Integrar telemetria via @hub/observability/data-access.",
+        "Criar testes mínimos (correlation/bypass/error normalize/headers)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Observability"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta ordem do chain e regras de bypass/allowlist",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Sem logs de Authorization/body",
+        "Testes cobrindo correlationId e normalização de erro"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: request com correlationId + erro normalizado + telemetria de latência",
+        "Notas de decisão (headers de contexto e política de bypass)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do http-base)",
+        "Guia: padrões de interceptors e como adicionar um novo com segurança",
+        "Playbook: troubleshooting (CORS, header faltando, loop, status inesperado)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:access",
+        "scope:shared"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/http-base/jest.config.js",
+        "profile": "angular",
+        "setupMode": "zone"
+      }
+    }
+  }
+}

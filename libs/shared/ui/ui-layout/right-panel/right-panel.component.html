@@ -1,0 +1,21 @@
+<!-- // src\app\lib\ui-layout\right-panel\right-panel.component.html -->
+
+<!-- Overlay -->
+<div class="ui-right-panel__overlay" *ngIf="state.open" aria-hidden="true" (click)="onOverlayClick()">
+</div>
+
+<!-- Painel -->
+<aside
+  #panelElement
+  class="ui-right-panel"
+  role="dialog"
+  tabindex="-1"
+  [attr.aria-hidden]="!state.open"
+  [attr.aria-modal]="state.open ? 'true' : null"
+  [attr.aria-labelledby]="getComputedAriaLabelledby()"
+  [attr.aria-describedby]="ariaDescribedby || null"
+  [attr.aria-label]="getComputedAriaLabelledby() ? null : (ariaLabel || null)"
+  [class.ui-right-panel--open]="state.open"
+>
+  <ng-content></ng-content>
+</aside>

@@ -1,0 +1,202 @@
+{
+  "ToolRegistry": {
+    "kind": "frontend",
+    "key": "ToolRegistry",
+    "title": "ToolRegistry",
+    "summary": "Registry de Tools no frontend: catálogo em runtime das tools disponíveis (contract exports), com versionamento e integração com menu/rotas/decisão.",
+    "function": "Centralizar descoberta e consulta de tools no Hub. Mantém um catálogo em runtime com os metadados necessários (toolKey, entry route, ToolMenuMetadata, ToolFeatureFlags, ToolPermissionMap, versão do contrato). Permite que o Shell e o Access Layer montem navegação e validem existência de tool sem acoplar o Hub ao código interno das tools.",
+    "whenRuns": [
+      "No bootstrap do Hub (carregar catálogo de tools disponíveis).",
+      "Quando RouteGuards valida toolKey em /tools/<toolKey> (exists/notFound).",
+      "Quando NavigationService monta menu/atalhos por ToolMenuMetadata.",
+      "Quando contexto muda e precisa recalcular “tools disponíveis” por flags/decisão."
+    ],
+    "inputs": [
+      {
+        "name": "Tool contract exports",
+        "detail": "Exports de cada tool (metadata/flags/permissionMap/routes) via tool-contract."
+      },
+      {
+        "name": "FeatureFlags",
+        "detail": "Flags efetivas para filtrar tools/features por contexto/ambiente."
+      },
+      {
+        "name": "AccessDecision",
+        "detail": "Decisão final para filtrar navegação/entrada (não autoriza no registry; apenas fornece view)."
+      },
+      {
+        "name": "Runtime Config",
+        "detail": "Lista de tools habilitadas/instaladas no cliente (OnPrem), ordem/grupos globais."
+      },
+      {
+        "name": "Tool catalog",
+        "detail": "Lista/mapa de tools registradas com versionamento e campos necessários."
+      },
+      {
+        "name": "Lookup API",
+        "detail": "getTool(toolKey), listTools(), exists(toolKey), getMenuNodes()."
+      },
+      {
+        "name": "Validation results",
+        "detail": "Detecta inconsistência de contrato (keys duplicadas, metadata inválido) em modo dev."
+      }
+    ],
+    "responsibilities": [
+      "Ser a fonte única do catálogo de tools disponíveis no Hub.",
+      "Expor APIs de lookup determinísticas (exists/get/list).",
+      "Consolidar metadados mínimos do contrato (toolKey, metadata, flags, permissionMap, version).",
+      "Integrar com feature-flags para filtrar tools/links desabilitados (habilitação).",
+      "Apoiar validação do contrato (modo dev) para evitar drift e chaves duplicadas."
+    ],
+    "nonResponsibilities": [
+      "Não executar lazy loading de módulos por conta própria (isso é Router/ToolRoutes).",
+      "Não decidir autorização (isso é access-decision + guards).",
+      "Não renderizar UI de catálogo/marketplace (isso é UI do Hub).",
+      "Não ser um “plugin loader” complexo (evitar engine de plugin); usar padrões Angular lazy routes.",
+      "Não persistir catálogo como dado de negócio (é configuração/runtime)."
+    ],
+    "dependencies": [
+      {
+        "name": "tool-contract",
+        "why": "Tipos e formatos do contrato exportado pelas tools."
+      },
+      {
+        "name": "feature-flags",
+        "why": "Filtrar tools/features desabilitadas por contexto/ambiente."
+      },
+      {
+        "name": "error-model",
+        "why": "Erros padronizados: toolNotFound, contractInvalid, toolDisabled."
+      },
+      {
+        "name": "@hub/observability/data-access",
+        "why": "Eventos mínimos: registry.loaded, tool.notFound, contract.invalid (modo dev)."
+      },
+      {
+        "name": "runtime-config (recomendado)",
+        "why": "Lista/enablement de tools instaladas por cliente; gap recomendado no inventário."
+      }
+    ],
+    "directoryModel": {
+      "suggestedPath": "libs/tool/tool-registry/src/lib/",
+      "files": [
+        {
+          "path": "tool-registry.service.ts",
+          "purpose": "Carrega catálogo; APIs exists/get/list; integra com flags/decisão para views."
+        },
+        {
+          "path": "tool-registry.model.ts",
+          "purpose": "Tipos: ToolDescriptor, ToolCatalog, ToolContractVersion, MenuNode."
+        },
+        {
+          "path": "tool-registry.validation.ts",
+          "purpose": "Validações dev: keys duplicadas, metadata inconsistente, deepLinks inválidos."
+        },
+        {
+          "path": "tool-registry.util.ts",
+          "purpose": "Helpers: merge config+exports, ordenação por group/order, filtros por flags."
+        },
+        {
+          "path": "tool-registry.spec.ts",
+          "purpose": "Testes: load catálogo, exists/get, filtro por flags, validações básicas."
+        }
+      ]
+    },
+    "howToBuild": [
+      "Definir ToolDescriptor mínimo: toolKey, label, group, order, entryPath, metadata, flags, permissionMap, version.",
+      "Carregar lista de tools instaladas do runtime config (OnPrem) e mesclar com exports disponíveis em build.",
+      "Aplicar validações em modo dev (duplicidade de toolKey, deepLinks inválidos, contract version).",
+      "Integrar com FeatureFlags para filtrar tools desabilitadas (view do catálogo).",
+      "Expor APIs: exists/get/list e métodos auxiliares para menu (getMenuNodes).",
+      "Criar testes mínimos: exists/get, ordenação, filtro por flags, validação de duplicidade."
+    ],
+    "acceptanceCriteria": [
+      "ToolRegistry lista tools disponíveis e permite lookup determinístico por toolKey.",
+      "RouteGuards consegue validar toolKey (exists/notFound) usando registry.",
+      "Menu do Hub pode ser composto a partir de metadata do registry (após filtros).",
+      "Registry não implementa autorização (somente catálogo/habilitação).",
+      "Validações detectam drift em modo dev.",
+      "Testes mínimos cobrem load/lookup/filtro."
+    ],
+    "complexity": 4,
+    "estimate": {
+      "executionDays": 4,
+      "finalizationDays": 5
+    },
+    "academy": {
+      "tracks": [
+        {
+          "title": "Runtime Catalog & Tool Discovery",
+          "goal": "Modelar catálogo determinístico de tools e APIs de lookup.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Descriptors mínimos e ordenação (group/order)",
+            "Merge config + exports",
+            "Validações para evitar drift"
+          ]
+        },
+        {
+          "title": "Integration with Flags & Decision",
+          "goal": "Integrar registry com habilitação e permitir consumo seguro pelo Hub.",
+          "level": "Intermediário",
+          "knowledge": [
+            "Habilitação (feature flags) vs autorização (access-decision)",
+            "View filtrada do catálogo por contexto",
+            "Erros padronizados (toolNotFound/toolDisabled)"
+          ]
+        }
+      ]
+    },
+    "ai": {
+      "promptSuggestion": "Gerar tool-registry: service com catálogo runtime de tools (toolKey, metadata, flags, permissionMap, version), merge com runtime config (tools instaladas), validações dev (keys duplicadas/deepLinks inválidos), integração com feature-flags para filtros e APIs exists/get/list/getMenuNodes. Entregar models/utils + testes mínimos.",
+      "generationSteps": [
+        "Criar models (ToolDescriptor, Catalog, version).",
+        "Criar service com load + merge config/exports.",
+        "Adicionar validações dev e error-model.",
+        "Integrar com feature-flags para filtro por contexto.",
+        "Criar testes mínimos (lookup/ordenação/filtro/duplicidade)."
+      ],
+      "tags": [
+        "Prompt versionado",
+        "Guided Build",
+        "Plugin Registry"
+      ]
+    },
+    "approval": {
+      "checklist": [
+        "PR documenta ToolDescriptor (campos mínimos) e merge config/exports",
+        "Gates passando (build/lint/tests/boundaries)",
+        "Registry não autoriza (separação preservada)",
+        "Validações dev para duplicidade/metadata inválido"
+      ]
+    },
+    "evidence": {
+      "required": [
+        "Link do PR + checklist preenchido",
+        "Registro do gate pass",
+        "Demo: acessar /tools/<toolKey> inexistente → registry detecta notFound (para 404)",
+        "Notas de decisão (fontes do catálogo: config vs exports)"
+      ]
+    },
+    "documentation": {
+      "deliverables": [
+        "Atualização do catálogo (ficha técnica do tool-registry)",
+        "Guia: como registrar uma tool (config + exports) e versionar contrato",
+        "Playbook: troubleshooting (tool sumiu, duplicidade de toolKey, deepLink inválido)"
+      ]
+    },
+    "nx": {
+      "tags": [
+        "type:shared",
+        "scope:tool"
+      ],
+      "jest": {
+        "runner": "jest",
+        "preset": "../../jest.preset.js",
+        "configPath": "libs/tool-registry/jest.config.ts",
+        "profile": "ts",
+        "setupMode": "none"
+      }
+    }
+  }
+}
